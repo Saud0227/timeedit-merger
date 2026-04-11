@@ -1,17 +1,9 @@
 #!/bin/sh
 set -e
 
-cat >/etc/nginx/conf.d/default.conf <<'EOF'
-server {
-  listen 8080;
-  server_name _;
-  root /usr/share/nginx/html;
-  index index.html;
+export DATA_DIR="${DATA_DIR:-/data}"
+export CONFIG_PATH="${CONFIG_PATH:-/data/config.json}"
 
-  location / {
-    try_files $uri $uri/ =404;
-  }
-}
-EOF
+mkdir -p /data
 
-nginx -g "daemon off;"
+exec uvicorn app.main:app --host 0.0.0.0 --port 8080
