@@ -5,13 +5,12 @@ from datetime import datetime, timedelta, timezone
 from typing import Any, Dict, List, Optional, Tuple
 
 import httpx
+from contextlib import asynccontextmanager
 from fastapi import FastAPI, Header, HTTPException
 from fastapi.responses import HTMLResponse, PlainTextResponse
 from icalendar import Calendar, Event
 
 # get version from config.json
-
-app = FastAPI(title="TimeEdit Merger", version="0.0.1")
 
 _FEEDS_CACHE: Dict[str, str] = {}
 _LAST_REFRESH: Optional[str] = None
@@ -30,14 +29,15 @@ def get_dynamic():
 # Calendar import, filter and parsing
 # -----------------------------------
 
-def load_ics(url: str) -> Optional[Calendar]:
-    try:
-        response = httpx.get(url, timeout=10)
-        response.raise_for_status()
-        return Calendar.from_ical(response.content)
-    except Exception as e:
-        print(f"Error loading ICS from {url}: {e}")
-        return None
+async def load_ics(url: str, timeout: int) -> Optional[Calendar]:
+    async with httpx.AsyncClient() as client:
+        try:
+            response = await client.get(url, timeout=timeout, follow_redirects=True)
+            response.raise_for_status()
+            return Calendar.from_ical(response.content)
+        except Exception as e:
+            print(f"Error loading ICS from {url}: {e}")
+            return None
 
 def utc_now() -> datetime:
     return datetime.now(timezone.utc)
@@ -67,12 +67,12 @@ def category_filter(activity: str, allowed: List[str], base: List[str]) -> bool:
         return True
     return False
 
-def handle_event(ev: Event, source_info: dict, allowed_categories: List[str], lookahead: int) -> Tuple[bool, bool]:
-    if ev.name != "VEVENT":
+def handle_event(event, source_info: dict, allowed_categories: List[str], lookahead: int) -> Tuple[bool, bool]:
+    if event.name != "VEVENT":
         return False, False
-    if not event_in_lookahead(ev, lookahead):
+    if not event_in_lookahead(event, lookahead):
         return False, False
-    info = extract_event_info(ev)
+    info = extract_event_info(event)
 
     out1 = source_info["output1"]["enabled"]
     if out1:
@@ -84,7 +84,7 @@ def handle_event(ev: Event, source_info: dict, allowed_categories: List[str], lo
     if not out1 and not out2:
         return False, False
 
-    format_event(ev, info, source_info["name"])
+    format_event(event, info, source_info["name"])
 
     return out1, out2
 
@@ -100,13 +100,13 @@ def format_event(event: Event, info: Dict[str, str], calendar_name: str):
     event['location'] = info.get("room", "")
     event['summary'] = f"{info.get('activity', '')} ({calendar_name})"
 
-def reload_cached_feeds():
+async def reload_cached_feeds():
     global _FEEDS_CACHE, _LAST_REFRESH, _LAST_ERROR
     # load dyn data to get sources, currently load an example source
     # options = get_options()
     options: Dict[str, Any] = {
-        "output1": {"name": "Private", "salt": "_PLACEHOLDER_SALT_TOKEN", "enabled": True},
-        "output2": {"name": "Public", "salt": "_PLACEHOLDER_SALT_TOKEN", "enabled": True},
+        "output1": {"name": "Private", "salt": "_PLACEHOLDER_SALT_TOKEN1", "enabled": True},
+        "output2": {"name": "Public", "salt": "_PLACEHOLDER_SALT_TOKEN2", "enabled": True},
         "lookahead_days": 30,
         "categories": ["Föreläsning", "Handledning", "Räkneövning", "Seminarium"]
     }
@@ -139,7 +139,7 @@ def reload_cached_feeds():
         if not url:
             continue
 
-        cal: Optional[Calendar] = load_ics(url)
+        cal: Optional[Calendar] = await load_ics(url, options.get("timeout_seconds", 20))
         if not cal:
             continue
 
@@ -161,6 +161,8 @@ def reload_cached_feeds():
     _LAST_REFRESH = utc_now().isoformat()
     _LAST_ERROR = None
 
+    print(_FEEDS_CACHE)
+
 def build_ics(events: List[Event]) -> str:
     cal = Calendar()
     cal.add("prodid", "-//timeedit-merger//")
@@ -173,24 +175,27 @@ def build_ics(events: List[Event]) -> str:
 # Startup
 # -------
 
-@app.on_event("startup")
-async def startup_event():
+@asynccontextmanager
+async def lifespan(app: FastAPI):
     # ensure settings files exist
 
     # reload dyn
 
     # start background refresh task
-    pass
+    yield
+
+    # Any shutdown logic
+
+app = FastAPI(title="TimeEdit Merger", version="0.0.1", lifespan=lifespan)
 
 # ----------
 # Ingress UI
 # ----------
 
-
 @app.get("/", response_class=HTMLResponse)
 async def index():
     path = os.path.join(os.path.dirname(__file__), "..", "web", "index.html")
-    path = os.abspath(path)
+    path = os.path.abspath(path)
     with open(path, "r", encoding="utf-8") as f:
         html = f.read()
     return HTMLResponse(content=html, status_code=200)
@@ -208,7 +213,8 @@ async def get_dynamic_api(authorization: Optional[str] = Header(None)):
 async def refresh_api(authorization: Optional[str] = Header(None)):
     # check_admin(None, authorization)
     # force refresh feeds
-    # _FEEDS_CACHE.clear()
+    await reload_cached_feeds()
+
     return {"status": "ok"}
 
 @app.put("/api/dynamic")
@@ -229,7 +235,20 @@ async def feed(feed_salt: str, authorization: Optional[str] = Header(None)):
     # check_feed_token(feed_salt, authorization)
 
     # Get feed based on salt
+    if feed_salt not in _FEEDS_CACHE:
+        await reload_cached_feeds()
 
-    # For now, just return a placeholder
-    return PlainTextResponse(content=f"Feed for salt: {feed_salt}", status_code=200)
+    ics = _FEEDS_CACHE.get(feed_salt)
+    if not ics:
+        raise HTTPException(status_code=404, detail=f"Unknown feed: {feed_salt}")
 
+    return PlainTextResponse(
+        content=ics,
+        media_type="text/calendar; charset=utf-8",
+        headers={"Cache-Control": "no-store"},
+    )
+
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="127.0.0.1", port=8000)
