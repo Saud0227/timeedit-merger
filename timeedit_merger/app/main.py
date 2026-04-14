@@ -2,7 +2,7 @@
 import os
 import re
 from datetime import datetime, timedelta, timezone
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 import httpx
 from fastapi import FastAPI, Header, HTTPException
@@ -16,8 +16,15 @@ app = FastAPI(title="TimeEdit Merger", version="0.0.1")
 _FEEDS_CACHE: Dict[str, str] = {}
 _LAST_REFRESH: Optional[str] = None
 _LAST_ERROR: Optional[str] = None
-_OUTPUT_NAMES: List[str] = ["output1", "output2"]
 _PARSING_PATTERN = re.compile(r"^.*?Aktivitet:\s*(?P<activity>.+?)\s*,\s*Lokalnamn:\s*(?P<room>.+?)(?:\.\s*|$).*$")
+
+# -------------------
+# Link to settings.py
+# -------------------
+
+def get_dynamic():
+    # get the current dynamic state
+    pass
 
 # -----------------------------------
 # Calendar import, filter and parsing
@@ -51,20 +58,37 @@ def event_in_lookahead(event: Event, lookahead_days: int) -> bool:
         return (now <= start <= lookahead_limit) or (now <= end <= lookahead_limit)
     return False
 
+def category_filter(activity: str, allowed: List[str], base: List[str]) -> bool:
+    if len(allowed) == 1 and allowed[0] == "*":
+        return True
+    elif activity in allowed:
+        return True
+    elif "?" in allowed and activity not in base:
+        return True
+    return False
 
-def generate_events(cal: Calendar, lookahead: int) -> List[Dict[str, Any]]:
-    events = []
-    for component in cal.walk():
-        if component.name != "VEVENT":
-            continue
-        if not event_in_lookahead(component, lookahead):
-            continue
-        info = extract_event_info(component)
-        info["ev"] = component
-        events.append(info)
-    return events
+def handle_event(ev: Event, source_info: dict, allowed_categories: List[str], lookahead: int) -> Tuple[bool, bool]:
+    if ev.name != "VEVENT":
+        return False, False
+    if not event_in_lookahead(ev, lookahead):
+        return False, False
+    info = extract_event_info(ev)
 
-def extract_event_info(event: Event) -> Dict[str, str]:
+    out1 = source_info["output1"]["enabled"]
+    if out1:
+        out1 = category_filter(info["activity"], source_info["output1"]["allowed"], allowed_categories)
+    out2 = source_info["output2"]["enabled"]
+    if out2:
+        out2 = category_filter(info["activity"], source_info["output2"]["allowed"], allowed_categories)
+
+    if not out1 and not out2:
+        return False, False
+
+    format_event(ev, info, source_info["name"])
+
+    return out1, out2
+
+def extract_event_info(event: Event) -> Dict[str, Any]:
     global _PARSING_PATTERN
     summary = str(event.get("summary", ""))
     match = _PARSING_PATTERN.match(summary)
@@ -72,17 +96,17 @@ def extract_event_info(event: Event) -> Dict[str, str]:
         return match.groupdict()
     return {}
 
-def format_event(event: Event, info: Dict[str, str], calendar_name: str) -> Event:
+def format_event(event: Event, info: Dict[str, str], calendar_name: str):
     event['location'] = info.get("room", "")
     event['summary'] = f"{info.get('activity', '')} ({calendar_name})"
-    return event
-
 
 def reload_cached_feeds():
+    global _FEEDS_CACHE, _LAST_REFRESH, _LAST_ERROR
     # load dyn data to get sources, currently load an example source
     # options = get_options()
     options: Dict[str, Any] = {
-        ### ....
+        "output1": {"name": "Private", "salt": "_PLACEHOLDER_SALT_TOKEN", "enabled": True},
+        "output2": {"name": "Public", "salt": "_PLACEHOLDER_SALT_TOKEN", "enabled": True},
         "lookahead_days": 30,
         "categories": ["Föreläsning", "Handledning", "Räkneövning", "Seminarium"]
     }
@@ -97,7 +121,14 @@ def reload_cached_feeds():
         }
     }
 
-    events_by_id: Dict[str, Dict[str, Any]] = {}
+    _FEEDS_CACHE = {}
+    if options["output1"]["enabled"]:
+        _FEEDS_CACHE[options["output1"]["salt"]]=''
+    if options["output2"]["enabled"]:
+        _FEEDS_CACHE[options["output2"]["salt"]]=''
+
+    output1_events = []
+    output2_events = []
 
     for source_id, source in source_by_id.items():
         # output1 or output2 enabled?
@@ -108,25 +139,19 @@ def reload_cached_feeds():
         if not url:
             continue
 
-        cal = load_ics(url)
+        cal: Optional[Calendar] = load_ics(url)
         if not cal:
             continue
 
-        events_by_id[source_id] = generate_events(cal, options.get("lookahead_days", 30))
+        for component in cal.walk():
+            out1, out2 = handle_event(component, source, options.get("categories", []), options.get("lookahead_days", 30))
 
+            if out1:
+                output1_events.append(component)
+            if out2:
+                output2_events.append(component)
 
-
-
-
-
-
-
-
-
-
-
-
-
+    # build ics files for each output
 
 # -------
 # Startup
