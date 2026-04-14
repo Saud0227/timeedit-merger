@@ -153,6 +153,22 @@ def reload_cached_feeds():
 
     # build ics files for each output
 
+    if options["output1"]["enabled"]:
+        _FEEDS_CACHE[options["output1"]["salt"]] = build_ics(output1_events)
+    if options["output2"]["enabled"]:
+        _FEEDS_CACHE[options["output2"]["salt"]] = build_ics(output2_events)
+
+    _LAST_REFRESH = utc_now().isoformat()
+    _LAST_ERROR = None
+
+def build_ics(events: List[Event]) -> str:
+    cal = Calendar()
+    cal.add("prodid", "-//timeedit-merger//")
+    cal.add("version", "2.0")
+    for ev in events:
+        cal.add_component(ev)
+    return cal.to_ical().decode("utf-8", errors="replace")
+
 # -------
 # Startup
 # -------
