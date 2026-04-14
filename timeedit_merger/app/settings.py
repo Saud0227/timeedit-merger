@@ -34,9 +34,9 @@ def _generate_secure_token() -> str:
 
 def _initial_options() -> Dict[str, Any]:
     opts: Dict[str, Any] = {
-        **DEFAULT_OPTIONSS,
-        "output1": dict(DEFAULT_OPTIONSS["output1"]),
-        "output2": dict(DEFAULT_OPTIONSS["output2"]),
+        **DEFAULT_OPTIONS,
+        "output1": dict(DEFAULT_OPTIONS["output1"]),
+        "output2": dict(DEFAULT_OPTIONS["output2"]),
         "admin_token": _generate_secure_token(),
         "feed_token": _generate_secure_token(),
     }
@@ -46,7 +46,7 @@ def _initial_options() -> Dict[str, Any]:
 
 def _normalize_options(data: Dict[str, Any]) -> Tuple[Dict[str, Any], bool]:
     opts: Dict[str, Any] = {
-        **DEFAULT_OPTIONSS
+        **DEFAULT_OPTIONS
     }
     if isinstance(data, dict):
         opts.update(data)
@@ -73,7 +73,7 @@ def _normalize_options(data: Dict[str, Any]) -> Tuple[Dict[str, Any], bool]:
 
     return opts, changed
 
-DEFAULT_OPTIONSS: Dict[str, Any] = {
+DEFAULT_OPTIONS: Dict[str, Any] = {
     "admin_token": _PLACEHOLDER_ADMIN_TOKEN,
     "feed_token": _PLACEHOLDER_FEED_TOKEN,
     "refresh_minutes": 5,
@@ -162,7 +162,6 @@ def validate_dynamic_config(new_dyn: Dict[str, Any]) -> None:
                 raise ValueError(f"Source '{key}' output '{output_key}' is enabled but 'allowed' is not a list")
             if enabled:
                 allowed_categories = set(SNAPSHOT.options.get("categories", []) + ["*", "?"])
-                print(allowed_categories)
                 for cat in allowed:
                     if cat not in allowed_categories:
                         raise ValueError(f"Source '{key}' output '{output_key}' has invalid category '{cat}' not in options or '*' or '?'")

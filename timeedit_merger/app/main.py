@@ -1,4 +1,4 @@
-# import asyncio
+import asyncio
 import os
 import re
 from datetime import datetime, timedelta, timezone
@@ -9,6 +9,8 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI, Header, HTTPException
 from fastapi.responses import HTMLResponse, PlainTextResponse
 from icalendar import Calendar, Event
+
+from app.settings import SNAPSHOT, reload_if_changed, save_dynamic, validate_dynamic_config, ensure_files_exist
 
 # get version from config.json
 
@@ -22,8 +24,12 @@ _PARSING_PATTERN = re.compile(r"^.*?Aktivitet:\s*(?P<activity>.+?)\s*,\s*Lokalna
 # -------------------
 
 def get_dynamic():
-    # get the current dynamic state
-    pass
+    reload_if_changed()
+    return SNAPSHOT.dynamic or {}
+
+def get_options():
+    reload_if_changed()
+    return SNAPSHOT.options or {}
 
 # -----------------------------------
 # Calendar import, filter and parsing
@@ -99,27 +105,14 @@ def extract_event_info(event: Event) -> Dict[str, Any]:
 def format_event(event: Event, info: Dict[str, str], calendar_name: str):
     event['location'] = info.get("room", "")
     event['summary'] = f"{info.get('activity', '')} ({calendar_name})"
+    event["description"] = event["url"]
 
 async def reload_cached_feeds():
     global _FEEDS_CACHE, _LAST_REFRESH, _LAST_ERROR
-    # load dyn data to get sources, currently load an example source
-    # options = get_options()
-    options: Dict[str, Any] = {
-        "output1": {"name": "Private", "salt": "_PLACEHOLDER_SALT_TOKEN1", "enabled": True},
-        "output2": {"name": "Public", "salt": "_PLACEHOLDER_SALT_TOKEN2", "enabled": True},
-        "lookahead_days": 30,
-        "categories": ["Föreläsning", "Handledning", "Räkneövning", "Seminarium"]
-    }
 
-    # sources = get_dynamic().get("sources", {})
-    source_by_id: Dict[str, Any] = {
-        "amS292CyHJkiRecx": {
-            "name": "Mat Stat",
-            "url": "https://cloud.timeedit.net/chalmers/web/student/ri6Y58b4yZ55Q9Q56dQQZ319Z151Q0jQ38nZ0nZ511585enu892t64BZC16987E6o82Fj90C1tl637F0FB3600FECk6Q4EB8F0.ics",
-            "output1": {"enabled": True, "allowed": ["Föreläsning", "Handledning"]},
-            "output2": {"enabled": True, "allowed": ["*"]}
-        }
-    }
+    options = get_options()
+
+    source_by_id = get_dynamic().get("sources", {})
 
     _FEEDS_CACHE = {}
     if options["output1"]["enabled"]:
@@ -130,12 +123,12 @@ async def reload_cached_feeds():
     output1_events = []
     output2_events = []
 
-    for source_id, source in source_by_id.items():
+    for _, source in source_by_id.items():
         # output1 or output2 enabled?
         if not (source.get("output1", {}).get("enabled") or source.get("output2", {}).get("enabled")):
             continue
 
-        url = source.get("url")
+        url: Optional[str] = source.get("url")
         if not url:
             continue
 
@@ -154,22 +147,40 @@ async def reload_cached_feeds():
     # build ics files for each output
 
     if options["output1"]["enabled"]:
-        _FEEDS_CACHE[options["output1"]["salt"]] = build_ics(output1_events)
+        _FEEDS_CACHE[options["output1"]["salt"]] = build_ics(output1_events, options["output1"]["name"])
     if options["output2"]["enabled"]:
-        _FEEDS_CACHE[options["output2"]["salt"]] = build_ics(output2_events)
+        _FEEDS_CACHE[options["output2"]["salt"]] = build_ics(output2_events, options["output2"]["name"])
 
     _LAST_REFRESH = utc_now().isoformat()
     _LAST_ERROR = None
 
-    print(_FEEDS_CACHE)
-
-def build_ics(events: List[Event]) -> str:
+def build_ics(events: List[Event], name: str) -> str:
     cal = Calendar()
     cal.add("prodid", "-//timeedit-merger//")
     cal.add("version", "2.0")
+
+    cal.add("X-WR-CALNAME", f'HA: {name}')
     for ev in events:
         cal.add_component(ev)
     return cal.to_ical().decode("utf-8", errors="replace")
+
+# ------------
+# Refresh loop
+# ------------
+
+async def refresh_loop():
+    global _LAST_ERROR
+    await reload_cached_feeds()
+    while True:
+        opt = get_options()
+        minutes = max(1, int(opt.get("refresh_minutes", 5)))
+        await asyncio.sleep(minutes * 60)
+        try:
+            await reload_cached_feeds()
+        except Exception as e:
+            _LAST_ERROR = f"Error during refresh: {e}"
+            print(_LAST_ERROR)
+
 
 # -------
 # Startup
@@ -177,11 +188,9 @@ def build_ics(events: List[Event]) -> str:
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # ensure settings files exist
-
-    # reload dyn
-
-    # start background refresh task
+    ensure_files_exist()
+    reload_if_changed()
+    asyncio.create_task(refresh_loop())
     yield
 
     # Any shutdown logic
@@ -217,14 +226,47 @@ async def refresh_api(authorization: Optional[str] = Header(None)):
 
     return {"status": "ok"}
 
+@app.get("/api/options")
+async def get_options_api(authorization: Optional[str] = Header(None)):
+    # check_admin(None, authorization)
+    return get_options()
+
+@app.get("/api/status")
+async def get_status_api():
+    reload_if_changed()
+    opt = get_options()
+    dyn = get_dynamic()
+    return {
+        "last_refresh": _LAST_REFRESH,
+        "last_error": _LAST_ERROR,
+        "options_path": os.getenv("OPTIONS_PATH", "/data/options.json"),
+        "dynamic_path": os.getenv("DYNAMIC_PATH", "/data/dynamic.json"),
+        "refresh_minutes": opt.get("refresh_minutes"),
+        "output1_enabled": opt.get("output1", {}).get("enabled", False),
+        "output2_enabled": opt.get("output2", {}).get("enabled", False),
+        "sources_count": len(dyn.get("sources", {})),
+        "output1_url": f"/feed/{opt.get('output1', {}).get('salt')}.ics" if opt.get("output1", {}).get("enabled") else None,
+        "output2_url": f"/feed/{opt.get('output2', {}).get('salt')}.ics" if opt.get("output2", {}).get("enabled") else None
+    }
+
 @app.put("/api/dynamic")
 async def put_dynamic_api(data: Dict[str, Any], authorization: Optional[str] = Header(None)):
     # check_admin(None, authorization)
-    # validate data
-    # save_dynamic(data)
+    try:
+        validate_dynamic_config(data)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    save_dynamic(data)
     return {"status": "ok"}
 
-
+@app.put("/api/dynamic/validate")
+async def validate_dynamic_api(data: Dict[str, Any], authorization: Optional[str] = Header(None)):
+    # check_admin(None, authorization)
+    try:
+        validate_dynamic_config(data)
+        return {"status": "ok"}
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
 # -------------
 # Feed endpoint
