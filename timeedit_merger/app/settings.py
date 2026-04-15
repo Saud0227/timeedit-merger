@@ -29,7 +29,7 @@ def _atomic_write(path: str, data: Dict[str, Any]) -> None:
         os.fsync(f.fileno())
     os.replace(tmp, path)
 
-def _generate_secure_token() -> str:
+def generate_secure_token() -> str:
     return secrets.token_urlsafe(32)
 
 def _initial_options() -> Dict[str, Any]:
@@ -37,11 +37,11 @@ def _initial_options() -> Dict[str, Any]:
         **DEFAULT_OPTIONS,
         "output1": dict(DEFAULT_OPTIONS["output1"]),
         "output2": dict(DEFAULT_OPTIONS["output2"]),
-        "admin_token": _generate_secure_token(),
-        "feed_token": _generate_secure_token(),
+        "admin_token": generate_secure_token(),
+        "feed_token": generate_secure_token(),
     }
-    opts["output1"]["salt"] = _generate_secure_token()
-    opts["output2"]["salt"] = _generate_secure_token()
+    opts["output1"]["salt"] = generate_secure_token()
+    opts["output2"]["salt"] = generate_secure_token()
     return opts
 
 def _normalize_options(data: Dict[str, Any]) -> Tuple[Dict[str, Any], bool]:
@@ -55,20 +55,32 @@ def _normalize_options(data: Dict[str, Any]) -> Tuple[Dict[str, Any], bool]:
 
     admin_token = opts.get("admin_token")
     if not isinstance(admin_token, str) or not admin_token.strip() or admin_token == _PLACEHOLDER_ADMIN_TOKEN:
-        opts["admin_token"] = _generate_secure_token()
+        opts["admin_token"] = generate_secure_token()
         changed = True
 
     feed_token = opts.get("feed_token")
     if not isinstance(feed_token, str) or not feed_token.strip() or feed_token == _PLACEHOLDER_FEED_TOKEN:
-        opts["feed_token"] = _generate_secure_token()
+        opts["feed_token"] = generate_secure_token()
         changed = True
+
+    categories = opts.get("categories")
+    if not isinstance(categories, list):
+        opts["categories"] = DEFAULT_OPTIONS["categories"]
+        changed = True
+    for i, category in enumerate(opts["categories"]):
+        if not isinstance(category, str):
+            opts["categories"][i] = str(category)
+            changed = True
+        if category.lower() != category:
+            opts["categories"][i] = category.lower()
+            changed = True
 
     for output_key in ["output1", "output2"]:
         output = opts.get(output_key)
         if isinstance(output, dict):
             salt = output.get("salt")
             if not isinstance(salt, str) or not salt.strip() or salt == _PLACEHOLDER_SALT_TOKEN:
-                output["salt"] = _generate_secure_token()
+                output["salt"] = generate_secure_token()
                 changed = True
 
     return opts, changed
@@ -79,7 +91,7 @@ DEFAULT_OPTIONS: Dict[str, Any] = {
     "refresh_minutes": 5,
     "timeout_seconds": 10,
     "lookahead_days": 30,
-    "categories": ["Föreläsning", "Handledning", "Räkneövning", "Seminarium"],
+    "categories": ["föreläsning", "handledning", "räkneövning", "seminarium"],
     "output1": {"name": "Private", "salt": _PLACEHOLDER_SALT_TOKEN, "enabled": True},
     "output2": {"name": "Public", "salt": _PLACEHOLDER_SALT_TOKEN, "enabled": True}
 }

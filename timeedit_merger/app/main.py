@@ -8,9 +8,10 @@ import httpx
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, Header, HTTPException
 from fastapi.responses import HTMLResponse, PlainTextResponse
+from fastapi.staticfiles import StaticFiles
 from icalendar import Calendar, Event
 
-from app.settings import SNAPSHOT, reload_if_changed, save_dynamic, validate_dynamic_config, ensure_files_exist
+from app.settings import SNAPSHOT, reload_if_changed, save_dynamic, validate_dynamic_config, ensure_files_exist, generate_secure_token
 
 # get version from config.json
 
@@ -104,7 +105,7 @@ def extract_event_info(event: Event) -> Dict[str, Any]:
 
 def format_event(event: Event, info: Dict[str, str], calendar_name: str):
     event['location'] = info.get("room", "")
-    event['summary'] = f"{info.get('activity', '')} ({calendar_name})"
+    event['summary'] = f"{calendar_name}: {info.get('activity', '').capitalize()}"
     event["description"] = event["url"]
 
 async def reload_cached_feeds():
@@ -197,6 +198,12 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title="TimeEdit Merger", version="0.0.1", lifespan=lifespan)
 
+# Mount static files
+static_dir = os.path.join(os.path.dirname(__file__), "..", "web", "public")
+static_dir = os.path.abspath(static_dir)
+if os.path.exists(static_dir):
+    app.mount("/static", StaticFiles(directory=static_dir), name="static")
+
 # ----------
 # Ingress UI
 # ----------
@@ -226,10 +233,16 @@ async def refresh_api(authorization: Optional[str] = Header(None)):
 
     return {"status": "ok"}
 
-@app.get("/api/options")
-async def get_options_api(authorization: Optional[str] = Header(None)):
+@app.get("/api/categories")
+async def get_categories_api(authorization: Optional[str] = Header(None)):
     # check_admin(None, authorization)
-    return get_options()
+    opt = get_options()
+    return {"categories": opt.get("categories", [])}
+
+@app.get("/api/salt")
+async def get_new_salt_api(authorization: Optional[str] = Header(None)):
+    # check_admin(None, authorization)
+    return {"salt": generate_secure_token()}
 
 @app.get("/api/status")
 async def get_status_api():
@@ -244,9 +257,11 @@ async def get_status_api():
         "refresh_minutes": opt.get("refresh_minutes"),
         "output1_enabled": opt.get("output1", {}).get("enabled", False),
         "output2_enabled": opt.get("output2", {}).get("enabled", False),
-        "sources_count": len(dyn.get("sources", {})),
         "output1_url": f"/feed/{opt.get('output1', {}).get('salt')}.ics" if opt.get("output1", {}).get("enabled") else None,
-        "output2_url": f"/feed/{opt.get('output2', {}).get('salt')}.ics" if opt.get("output2", {}).get("enabled") else None
+        "output2_url": f"/feed/{opt.get('output2', {}).get('salt')}.ics" if opt.get("output2", {}).get("enabled") else None,
+        "output1_name": opt.get("output1", {}).get("name"),
+        "output2_name": opt.get("output2", {}).get("name"),
+        "sources_count": len(dyn.get("sources", {}))
     }
 
 @app.put("/api/dynamic")
