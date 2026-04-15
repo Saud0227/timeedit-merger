@@ -1,10 +1,5 @@
 // Main application script
 
-const output1a = document.getElementById('output1a');
-const output1label = document.getElementById("output1label");
-const output2a = document.getElementById('output2a');
-const output2label = document.getElementById("output2label");
-
 const mainTile = document.getElementById('main-content');
 let categories = []
 const saveButton = document.getElementById('save');
@@ -13,33 +8,27 @@ function capitalizeFirstLetter(string) {
     return string.charAt(0).toUpperCase() + string.slice(1);
 }
 
-
 document.addEventListener('DOMContentLoaded', function () {
 
     getState((state) => {
-        console.log('Current state loaded from server:', state);
-        output1a.href = state.output1_url
-        output1a.setAttribute("feed-enabled", state.output1_enabled)
-        output1label.innerHTML = state.output1_name
-        // output1url.value = state.output1_url
+        document.getElementById('output1a').href = state.output1_url
+        document.getElementById('output1a').setAttribute("feed-enabled", state.output1_enabled)
+        document.getElementById("output1label").innerHTML = state.output1_name
 
-        output2a.href = state.output2_url
-        output2a.setAttribute("feed-enabled", state.output2_enabled)
-        output2label.innerHTML = state.output2_name
-        // output2url.value = state.output2_url
+        document.getElementById('output2a').href = state.output2_url
+        document.getElementById('output2a').setAttribute("feed-enabled", state.output2_enabled)
+        document.getElementById("output2label").innerHTML = state.output2_name
     })
     getAllCategories();
 
     loadCurrentSources();
-    document.getElementById('reset-button').addEventListener('click', loadCurrentSources);
     document.getElementById('new-source-button').addEventListener('click', createEmptySourceRow);
+    document.getElementById('reset-button').addEventListener('click', loadCurrentSources);
+    document.getElementById('refresh-cache-button').addEventListener('click', refreshCache);
     saveButton.addEventListener('click', write);
     console.log('Application loaded');
 });
 
-/**
- * Validates JSON configuration against the server
- */
 function validateJson(data) {
 
     try {
@@ -119,7 +108,6 @@ function getJsonViaApi(api_endpoint, callback) {
 
 function loadCurrentSources() {
     getJsonViaApi('/api/dynamic', (data) => {
-        console.log('Current sources loaded from server:', data);
         // get source keys and values from data.sources and create a row for each source
         resetSourceRows();
         Object.keys(data.sources).forEach((key, index) => {
@@ -200,7 +188,6 @@ function createSourceRow(id, source) {
 
         let isChecked = source.output1.enabled
         let toCheckCategory = category === "other" ? "?" : category;
-        console.log(toCheckCategory);
 
         if (isChecked) {
             isChecked = source.output1.allowed.includes(toCheckCategory) || !source.output1.allowed || (source.output1.allowed.length === 1 && source.output1.allowed[0] === "*");
@@ -274,7 +261,6 @@ function write() {
         categories.forEach(category => {
             const checkbox1 = document.getElementById(id + '_output1_' + category);
             if (checkbox1.checked) {
-                console.log(category, category.toLowerCase());
                 if (category.toLowerCase() === "other") {
                     output1.push("?");
                 } else {
@@ -320,4 +306,14 @@ function write() {
     setTimeout(() => {
         loadCurrentSources();
     }, 500);
+}
+
+function refreshCache() {
+    fetch('/api/refresh', {
+        method: 'POST'
+    }).then(response => {
+        if (response.status !== 200) {
+            throw new Error('Failed to refresh cache: ' + response.statusText);
+        }
+    });
 }

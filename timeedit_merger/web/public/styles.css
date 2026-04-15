@@ -27,6 +27,7 @@ h1 {
     margin: 0;
     grid-area: hd;
     padding: 10px 20px 15px 20px;
+    user-select: none;
 }
 
 main {
@@ -62,10 +63,12 @@ a.feed-item {
     width: fit-content;
     justify-self: center;
     align-self: center;
+    user-select: none;
 }
 a.feed-item > label {
     margin: 0;
     padding: 0 5px;
+    user-select: none;
 }
 
 a.feed-item[feed-enabled = "true"] {
@@ -104,6 +107,7 @@ div.source-row#header-row > h2 {
     margin: 0;
     padding: 10px 0;
     color: var(--granitgra);
+    user-select: none;
 }
 
 div.source-row {
@@ -127,6 +131,7 @@ div.checkbox-container {
 
 div.checkbox-container > label {
     align-self: center;
+    user-select: none;
 }
 
 div.checkbox-container > label > input {
@@ -185,6 +190,7 @@ aside > button {
     margin-right: 10px;
     border-radius: 8px;
     transition: 0.3s ease-in-out;
+    user-select: none;
 }
 
 aside > button:hover {
