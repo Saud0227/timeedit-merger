@@ -66,6 +66,7 @@ def _normalize_options(data: Dict[str, Any]) -> Tuple[Dict[str, Any], bool]:
     categories = opts.get("categories")
     if isinstance(categories, str):
         opts["categories"] = [cat.strip().lower() for cat in categories.split(",") if cat.strip()]
+        categories = opts.get("categories")
         changed = True
     if not isinstance(categories, list):
         opts["categories"] = DEFAULT_OPTIONS["categories"]
