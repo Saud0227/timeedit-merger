@@ -92,6 +92,7 @@ def _normalize_options(data: Dict[str, Any]) -> Tuple[Dict[str, Any], bool]:
 DEFAULT_OPTIONS: Dict[str, Any] = {
     "admin_token": _PLACEHOLDER_ADMIN_TOKEN,
     "feed_token": _PLACEHOLDER_FEED_TOKEN,
+    "external_url": '',
     "refresh_minutes": 5,
     "timeout_seconds": 10,
     "lookahead_days": 30,

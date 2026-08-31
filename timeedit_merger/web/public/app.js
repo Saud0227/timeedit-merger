@@ -11,11 +11,12 @@ function capitalizeFirstLetter(string) {
 document.addEventListener('DOMContentLoaded', function () {
 
     getState((state) => {
-        document.getElementById('output1a').href = state.output1_url
+        document.getElementById('output1a').href = state.external_url + state.output1_url
         document.getElementById('output1a').setAttribute("feed-enabled", state.output1_enabled)
         document.getElementById("output1label").innerHTML = state.output1_name
 
-        document.getElementById('output2a').href = state.output2_url
+
+        document.getElementById('output2a').href = state.external_url + state.output2_url
         document.getElementById('output2a').setAttribute("feed-enabled", state.output2_enabled)
         document.getElementById("output2label").innerHTML = state.output2_name
     })

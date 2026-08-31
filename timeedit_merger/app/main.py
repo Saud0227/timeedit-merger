@@ -200,7 +200,7 @@ async def lifespan(app: FastAPI):
 
     # Any shutdown logic
 
-app = FastAPI(title="TimeEdit Merger", version="0.0.8", lifespan=lifespan)
+app = FastAPI(title="TimeEdit Merger", version="0.1.0", lifespan=lifespan)
 
 # Mount static files
 static_dir = os.path.join(os.path.dirname(__file__), "..", "web", "public")
@@ -265,7 +265,8 @@ async def get_status_api():
         "output2_url": f"/feed/{opt.get('output2', {}).get('salt')}.ics" if opt.get("output2", {}).get("enabled") else None,
         "output1_name": opt.get("output1", {}).get("name"),
         "output2_name": opt.get("output2", {}).get("name"),
-        "sources_count": len(dyn.get("sources", {}))
+        "sources_count": len(dyn.get("sources", {})),
+        "external_url": opt.get("external_url", ""),
     }
 
 @app.put("/api/dynamic")
