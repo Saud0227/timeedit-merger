@@ -1,5 +1,5 @@
 name: TimeEdit Merger
-version: "0.1.4"
+version: "0.1.5"
 slug: timeedit_merger
 description: Merges multiple TimeEdit schedules into one unified schedule. Supports filtering by activities and ensures that all ics fields are populated correctly.
 
@@ -17,16 +17,23 @@ panel_title: TimeEdit Merger
 panel_icon: mdi:calendar-multiple
 
 ports:
-  8080/tcp: null
+    8080/tcp: null
 
 ports_description:
-  8080/tcp: Web interface
+    8080/tcp: Web interface
 
 options:
+    admin_token: null
+    feed_tokens: null
     refresh_minutes: 5
     timeout_seconds: 10
     lookahead_days: 30
-    categories: "föreläsning,handledning,räkneövning,seminarium,datorlaboration"
+    categories:
+      - föreläsning
+      - handledning
+      - räkneövning
+      - seminarium
+      - datorlaboration
     output1:
         name: Private
         enabled: true
@@ -34,19 +41,20 @@ options:
         name: Public
         enabled: false
 schema:
-  admin_token: "str?"
-  feed_tokens: "str?"
-  refresh_minutes: int(1,1440)
-  timeout_seconds: int(1,60)
-  lookahead_days: int(1,120)
-  categories: str
-  output1:
-    name: str
-    salt: "str?"
-    enabled: bool
-  output2:
-    name: str
-    salt: "str?"
-    enabled: bool
+    admin_token: str
+    feed_tokens: str
+    refresh_minutes: int(1,1440)
+    timeout_seconds: int(1,60)
+    lookahead_days: int(1,120)
+    categories:
+      - str
+    output1:
+        name: str
+        salt: str
+        enabled: bool
+    output2:
+        name: str
+        salt: str
+        enabled: bool
 
 url: https://github.com/saud0227/timeedit-merger
