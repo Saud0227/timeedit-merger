@@ -33,7 +33,7 @@ function validateJson(data) {
 
     try {
 
-        fetch('/api/dynamic/validate', {
+        fetch('api/dynamic/validate', {
             method: 'PUT',
             headers: {
                 'Content-Type': 'application/json'
@@ -60,7 +60,7 @@ function validateJson(data) {
 function submitForm(data) {
     try {
 
-        fetch('/api/dynamic', {
+        fetch('api/dynamic', {
             method: 'PUT',
             headers: {
                 'Content-Type': 'application/json'
@@ -107,7 +107,7 @@ function getJsonViaApi(api_endpoint, callback) {
 
 
 function loadCurrentSources() {
-    getJsonViaApi('/api/dynamic', (data) => {
+    getJsonViaApi('api/dynamic', (data) => {
         // get source keys and values from data.sources and create a row for each source
         resetSourceRows();
         Object.keys(data.sources).forEach((key, index) => {
@@ -119,11 +119,11 @@ function loadCurrentSources() {
 }
 
 function getState(callback) {
-    getJsonViaApi('/api/status', callback);
+    getJsonViaApi('api/status', callback);
 }
 
 function getAllCategories() {
-    getJsonViaApi('/api/categories', (data)=>{
+    getJsonViaApi('api/categories', (data)=>{
         categories = data.categories;
         categories.push("other");
     });
@@ -137,7 +137,7 @@ function resetSourceRows() {
 }
 
 function createEmptySourceRow() {
-    getJsonViaApi('/api/salt', (data) => {
+    getJsonViaApi('api/salt', (data) => {
         const newId = data.salt;
         const emptySource = {
             name: '',
@@ -309,7 +309,7 @@ function write() {
 }
 
 function refreshCache() {
-    fetch('/api/refresh', {
+    fetch('api/refresh', {
         method: 'POST'
     }).then(response => {
         if (response.status !== 200) {
