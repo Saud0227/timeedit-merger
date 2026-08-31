@@ -200,7 +200,7 @@ async def lifespan(app: FastAPI):
 
     # Any shutdown logic
 
-app = FastAPI(title="TimeEdit Merger", version="0.1.0", lifespan=lifespan)
+app = FastAPI(title="TimeEdit Merger", version="0.1.1", lifespan=lifespan)
 
 # Mount static files
 static_dir = os.path.join(os.path.dirname(__file__), "..", "web", "public")
