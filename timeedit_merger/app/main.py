@@ -18,7 +18,11 @@ from app.settings import SNAPSHOT, reload_if_changed, save_dynamic, validate_dyn
 _FEEDS_CACHE: Dict[str, str] = {}
 _LAST_REFRESH: Optional[str] = None
 _LAST_ERROR: Optional[str] = None
-_PARSING_PATTERN = re.compile(r"^.*?Aktivitet:\s*(?P<activity>.+?)\s*,\s*Lokalnamn:\s*(?P<room>.+?)(?:\.\s*|$).*$")
+_PARSING_PATTERN = re.compile(
+    r"(?s)"
+    r"(?=.*?\bAktivitet:\s*(?P<activity>[^\r\n]+))"
+    r"(?=.*?\bLokalnamn:\s*(?P<room>[^.\r\n]+))"
+)
 
 # -------------------
 # Link to settings.py
@@ -83,10 +87,10 @@ def handle_event(event, source_info: dict, allowed_categories: List[str], lookah
 
     out1 = source_info["output1"]["enabled"]
     if out1:
-        out1 = category_filter(info["activity"], source_info["output1"]["allowed"], allowed_categories)
+        out1 = category_filter(info["activity"].lower(), source_info["output1"]["allowed"], allowed_categories)
     out2 = source_info["output2"]["enabled"]
     if out2:
-        out2 = category_filter(info["activity"], source_info["output2"]["allowed"], allowed_categories)
+        out2 = category_filter(info["activity"].lower(), source_info["output2"]["allowed"], allowed_categories)
 
     if not out1 and not out2:
         return False, False
@@ -97,11 +101,13 @@ def handle_event(event, source_info: dict, allowed_categories: List[str], lookah
 
 def extract_event_info(event: Event) -> Dict[str, Any]:
     global _PARSING_PATTERN
-    summary = str(event.get("summary", ""))
+    summary = str(event.get("LOCATION", ""))
     match = _PARSING_PATTERN.match(summary)
     if match:
-        return match.groupdict()
-    return {}
+        # for all named groups, strip whitespace
+        clean = {k: v.strip() for k, v in match.groupdict().items() if v is not None}
+        return clean
+    raise ValueError(f"Could not parse event summary: {summary}")
 
 def format_event(event: Event, info: Dict[str, str], calendar_name: str):
     event['location'] = info.get("room", "")

@@ -91,7 +91,7 @@ DEFAULT_OPTIONS: Dict[str, Any] = {
     "refresh_minutes": 5,
     "timeout_seconds": 10,
     "lookahead_days": 30,
-    "categories": ["föreläsning", "handledning", "räkneövning", "seminarium"],
+    "categories": ["föreläsning", "handledning", "räkneövning", "seminarium", "datorlaboration"],
     "output1": {"name": "Private", "salt": _PLACEHOLDER_SALT_TOKEN, "enabled": True},
     "output2": {"name": "Public", "salt": _PLACEHOLDER_SALT_TOKEN, "enabled": True}
 }
