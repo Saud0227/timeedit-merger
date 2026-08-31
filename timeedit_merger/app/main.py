@@ -13,8 +13,6 @@ from icalendar import Calendar, Event
 
 from app.settings import SNAPSHOT, reload_if_changed, save_dynamic, validate_dynamic_config, ensure_files_exist, generate_secure_token
 
-# get version from config.json
-
 _FEEDS_CACHE: Dict[str, str] = {}
 _LAST_REFRESH: Optional[str] = None
 _LAST_ERROR: Optional[str] = None
@@ -202,7 +200,7 @@ async def lifespan(app: FastAPI):
 
     # Any shutdown logic
 
-app = FastAPI(title="TimeEdit Merger", version="0.0.1", lifespan=lifespan)
+app = FastAPI(title="TimeEdit Merger", version="0.0.2", lifespan=lifespan)
 
 # Mount static files
 static_dir = os.path.join(os.path.dirname(__file__), "..", "web", "public")
