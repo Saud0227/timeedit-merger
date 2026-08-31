@@ -200,7 +200,7 @@ async def lifespan(app: FastAPI):
 
     # Any shutdown logic
 
-app = FastAPI(title="TimeEdit Merger", version="0.0.6", lifespan=lifespan)
+app = FastAPI(title="TimeEdit Merger", version="0.0.7", lifespan=lifespan)
 
 # Mount static files
 static_dir = os.path.join(os.path.dirname(__file__), "..", "web", "public")
@@ -283,6 +283,10 @@ async def validate_dynamic_api(data: Dict[str, Any], authorization: Optional[str
     # check_admin(None, authorization)
     try:
         validate_dynamic_config(data)
+        for data_item in data["sources"].values():
+            res = await load_ics(data_item["url"], get_options().get("timeout_seconds", 20))
+            if res is None:
+                raise ValueError(f"Could not load ICS from {data_item['url']}")
         return {"status": "ok"}
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))

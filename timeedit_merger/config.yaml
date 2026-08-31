@@ -1,5 +1,5 @@
 name: TimeEdit Merger
-version: "0.0.6"
+version: "0.0.7"
 slug: timeedit_merger
 description: Merges multiple TimeEdit schedules into one unified schedule. Supports filtering by activities and ensures that all ics fields are populated correctly.
 
