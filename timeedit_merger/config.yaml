@@ -28,12 +28,7 @@ options:
     refresh_minutes: 5
     timeout_seconds: 10
     lookahead_days: 30
-    categories:
-        - föreläsning
-        - handledning
-        - räkneövning
-        - seminarium
-        - datorlaboration
+    categories: "föreläsning,handledning,räkneövning,seminarium,datorlaboration"
     output1:
         name: Private
         salt: null
@@ -48,7 +43,7 @@ schema:
   refresh_minutes: int(1,1440)
   timeout_seconds: int(1,60)
   lookahead_days: int(1,120)
-  categories: list(str)
+  categories: str
   output1:
     name: str
     salt: "str?"
