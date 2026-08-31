@@ -1,5 +1,5 @@
 name: TimeEdit Merger
-version: "0.1.7"
+version: "0.1.8"
 slug: timeedit_merger
 description: Merges multiple TimeEdit schedules into one unified schedule. Supports filtering by activities and ensures that all ics fields are populated correctly.
 
@@ -41,8 +41,8 @@ options:
         name: Public
         enabled: false
 schema:
-    admin_token: str
-    feed_tokens: str
+    admin_token: str(43)
+    feed_tokens: str(43)
     refresh_minutes: int(1,1440)
     timeout_seconds: int(1,60)
     lookahead_days: int(1,120)
@@ -50,11 +50,11 @@ schema:
       - str
     output1:
         name: str
-        salt: str
+        salt: str(43)
         enabled: bool
     output2:
         name: str
-        salt: str
+        salt: str(43)
         enabled: bool
 
 url: https://github.com/saud0227/timeedit-merger

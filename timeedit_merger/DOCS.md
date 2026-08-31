@@ -23,10 +23,11 @@ The setup process is in 3 parts: setting up the app, seting up caddy, and settin
 ### Setting up the app
 
 To set up TimeEdit Merger, follow these steps:
-1. Generate 4 random url safe tokens using the following command in your terminal:
+1. Generate 4 random url safe tokens with len 43 using the following command in your terminal:
    ```
-   python3 -c "import secrets; print(secrets.token_urlsafe(43))"
+   python3 -c "import secrets; print(secrets.token_urlsafe(32))"
    ```
+   When using ``secrets.token_urlsafe(32)`` it will generate a string of 43 characters.
 2. Asign them to the following variables in the configuration of the app:
    - `admin_token`
    - `user_token`
