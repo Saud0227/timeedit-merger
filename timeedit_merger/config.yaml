@@ -1,0 +1,28 @@
+name: TimeEdit Merger
+version: "0.0.2"
+slug: timeedit_merger
+description: Merges multiple TimeEdit schedules into one unified schedule. Supports filtering by activities and ensures that all ics fields are populated correctly.
+
+startup: application
+boot: auto
+
+arch:
+  - amd64
+  - aarch64
+
+ingress: true
+ingress_port: 8080
+
+panel_title: TimeEdit Merger
+panel_icon: mdi:calendar-multiple
+
+ports:
+  8080/tcp: null
+
+ports_description:
+  8080/tcp: Web interface
+
+options: {}
+schema: {}
+
+url: https://github.com/saud0227/timeedit-merger
