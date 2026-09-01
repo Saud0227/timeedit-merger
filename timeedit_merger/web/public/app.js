@@ -2,6 +2,10 @@
 
 const mainTile = document.getElementById('main-content');
 let categories = []
+let out1 = ""
+let out1active = false
+let out2 = ""
+let out2active = false
 const saveButton = document.getElementById('save');
 
 function capitalizeFirstLetter(string) {
@@ -10,28 +14,25 @@ function capitalizeFirstLetter(string) {
 
 document.addEventListener('DOMContentLoaded', function () {
 
-    getState((state) => {
-        document.getElementById('output1a').href = state.external_url + state.output1_url
-        document.getElementById('output1a').setAttribute("feed-enabled", state.output1_enabled)
-        document.getElementById("output1label").innerHTML = state.output1_name
-
-
-        document.getElementById('output2a').href = state.external_url + state.output2_url
-        document.getElementById('output2a').setAttribute("feed-enabled", state.output2_enabled)
-        document.getElementById("output2label").innerHTML = state.output2_name
-    })
     getAllCategories();
 
-    const element = document.getElementById("choices-multiple-remove-button");
-    const multipleCancelButton = new Choices(element, {
-            allowHTML: true,
-            removeItemButton: true,
-          }
-        );
+    getState((state) => {
+        out1 = state.output1_name
+        out1active = state.output1_enabled
+        out2 = state.output2_name
+        out2active = state.output2_enabled
+        // when we know out1 and out2 we can load the current sources
+        loadAllCurrentSources();
+    })
 
-    loadCurrentSources();
+    // const element = document.getElementById("choices-multiple-remove-button");
+    // const multipleCancelButton = new Choices(element, {
+    //         allowHTML: true,
+    //         removeItemButton: true,
+    //       }
+    // );
     document.getElementById('new-source-button').addEventListener('click', createEmptySourceRow);
-    document.getElementById('reset-button').addEventListener('click', loadCurrentSources);
+    document.getElementById('reset-button').addEventListener('click', loadAllCurrentSources);
     document.getElementById('refresh-cache-button').addEventListener('click', refreshCache);
     saveButton.addEventListener('click', write);
     console.log('Application loaded');
@@ -61,40 +62,6 @@ function validateJson(data) {
         alert('Invalid JSON: ' + e.message);
     }
 }
-
-/**
- * Submits the JSON configuration to the server
- */
-function submitForm(data) {
-    try {
-
-        fetch('api/dynamic', {
-            method: 'PUT',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(data, null, 0)
-        })
-            .then(response => response.json())
-            .then(data => {
-                if (data.status === 'ok') {
-                    // add the atribute success to save button for 2 seconds
-                    saveButton.setAttribute("success", "true");
-                    setTimeout(() => {
-                        saveButton.removeAttribute("success");
-                    }, 1000);
-                } else {
-                    alert('Failed to write JSON to the server: ' + data.message);
-                }
-            })
-            .catch(error => {
-                alert('Error writing JSON to server: ' + error.message);
-            });
-    } catch (e) {
-        alert('Invalid JSON: ' + e.message);
-    }
-}
-
 /**
  * Fetches the current JSON from the server and populates the textarea
  */
@@ -113,16 +80,15 @@ function getJsonViaApi(api_endpoint, callback) {
         });
 }
 
-
-function loadCurrentSources() {
-    getJsonViaApi('api/dynamic', (data) => {
+function loadAllCurrentSources() {
+    getJsonViaApi('api/sources', (data) => {
         // get source keys and values from data.sources and create a row for each source
         resetSourceRows();
-        Object.keys(data.sources).forEach((key, index) => {
-            const source = data.sources[key];
+        console.log(data)
+        Object.keys(data).forEach((key, index) => {
+            const source = data[key];
             createSourceRow(key, source);
         });
-        // document.getElementById('raw_json').value = JSON.stringify(data.sources, null, 2);
     });
 }
 
@@ -139,28 +105,29 @@ function getAllCategories() {
 
 function resetSourceRows() {
     // all children except the first (header row) should be removed
-    while (mainTile.children.length > 1) {
+    while (mainTile.children.length > 0) {
         mainTile.removeChild(mainTile.lastChild);
     }
 }
 
 function createEmptySourceRow() {
-    getJsonViaApi('api/salt', (data) => {
-        const newId = data.salt;
-        const emptySource = {
-            name: '',
-            url: '',
-            output1: {
-                enabled: false,
-                allowed: []
-            },
-            output2: {
-                enabled: false,
-                allowed: []
-            }
-        }
-        createSourceRow(newId, emptySource);
-    });
+    // getJsonViaApi('api/salt', (data) => {
+    //     const newId = data.salt;
+    //     const emptySource = {
+    //         name: '',
+    //         url: '',
+    //         output1: {
+    //             enabled: false,
+    //             allowed: []
+    //         },
+    //         output2: {
+    //             enabled: false,
+    //             allowed: []
+    //         }
+    //     }
+    //     createSourceRow(newId, emptySource);
+    // });
+    console.log("Discontinued")
 }
 
 
@@ -169,79 +136,111 @@ function createSourceRow(id, source) {
     row.classList.add('source-row');
     row.id = id
 
+    const headerDiv = document.createElement('div');
+    headerDiv.classList.add('source-header');
+
     const name = document.createElement('input')
     name.type = 'text';
     name.value = source.name || '';
     name.placeholder = 'Name...';
     name.id = id + '_name'
-    row.appendChild(name);
+    headerDiv.appendChild(name);
 
     const url = document.createElement('input');
     url.type = 'text';
     url.value = source.url || '';
     url.placeholder = 'URL...';
     url.id = id + '_url'
-    row.appendChild(url);
+    headerDiv.appendChild(url);
 
-    const checkboxContainer1 = document.createElement('div');
-    checkboxContainer1.classList.add('checkbox-container');
+    // edit button
 
-    const checkboxContainer2 = document.createElement('div');
-    checkboxContainer2.classList.add('checkbox-container');
+    row.appendChild(headerDiv);
+
+    const selectLabel1 = document.createElement('label');
+    selectLabel1.innerText = out1;
+    selectLabel1.htmlFor = id + '_output1';
+    selectLabel1.style.gridArea = 'label1';
+
+    // <select class="form-control" name="id_output1" id="id_output1" placeholder="Select activities" multiple>
+    const multiSelect1 = document.createElement('select');
+    multiSelect1.id = id + '_output1';
+    multiSelect1.classList.add('form-control');
+    multiSelect1.multiple = true;
+    multiSelect1.style.gridArea = 'select1';
+    row.appendChild(selectLabel1);
+    row.appendChild(multiSelect1);
+
+
+    // const checkboxContainer2 = document.createElement('div');
+    // checkboxContainer2.classList.add('checkbox-container');
+    const selectLabel2 = document.createElement('label');
+    selectLabel2.innerText = out2;
+    selectLabel2.htmlFor = id + '_output2';
+    selectLabel2.style.gridArea = 'label2';
+    const multiSelect2 = document.createElement('select');
+    multiSelect2.id = id + '_output2';
+    multiSelect2.classList.add('form-control');
+    multiSelect2.multiple = true;
+    multiSelect2.style.gridArea = 'select2';
+    row.appendChild(selectLabel2);
+    row.appendChild(multiSelect2);
 
     categories.forEach(category => {
-        const checkbox1 = document.createElement('input');
-        checkbox1.type = 'checkbox';
-        checkbox1.id = id + '_output1_' + category;
+        const option1 = document.createElement('option');
+        option1.value = category;
+        option1.innerHTML = capitalizeFirstLetter(category);
 
-        let isChecked = source.output1.enabled
+        let isChecked1 = source.output1.enabled
         let toCheckCategory = category === "other" ? "?" : category;
 
-        if (isChecked) {
-            isChecked = source.output1.allowed.includes(toCheckCategory) || !source.output1.allowed || (source.output1.allowed.length === 1 && source.output1.allowed[0] === "*");
+        if (isChecked1) {
+            isChecked1 = source.output1.allowed.includes(toCheckCategory) || !source.output1.allowed || (source.output1.allowed.length === 1 && source.output1.allowed[0] === "*");
         }
-
-        checkbox1.checked = isChecked;
-        checkboxContainer1.appendChild(checkbox1);
-
-        const label1 = document.createElement('label');
-        label1.htmlFor = checkbox1.id;
-        label1.innerText = capitalizeFirstLetter(category);
-
-        label1.appendChild(checkbox1)
-        checkboxContainer1.appendChild(label1);
+        if (isChecked1) {
+            option1.setAttribute('selected', 'selected');
+        }
+        multiSelect1.appendChild(option1);
 
         // -------------------------------------------------------------------
 
-        const checkbox2 = document.createElement('input');
-        checkbox2.type = 'checkbox';
-        checkbox2.id = id + '_output2_' + category;
+        const option2 = document.createElement('option');
+        option2.value = category;
+        option2.innerHTML = capitalizeFirstLetter(category);
 
-        isChecked = source.output2.enabled
+        let isChecked2 = source.output2.enabled
+        let toCheckCategory2 = category === "other" ? "?" : category;
 
-        if (isChecked) {
-            isChecked = source.output2.allowed.includes(category) || !source.output2.allowed || (source.output2.allowed.length === 1 && source.output2.allowed[0] === "*");
+        if (isChecked2) {
+            isChecked2 = source.output2.allowed.includes(toCheckCategory2) || !source.output2.allowed || (source.output2.allowed.length === 1 && source.output2.allowed[0] === "*");
         }
+        if (isChecked2) {
+            option2.setAttribute('selected', 'selected');
+        }
+        multiSelect2.appendChild(option2);
 
-        checkbox2.checked = isChecked;
-        checkboxContainer2.appendChild(checkbox2);
-
-        const label2 = document.createElement('label');
-        label2.htmlFor = checkbox2.id;
-        label2.innerText = capitalizeFirstLetter(category);
-
-        label2.appendChild(checkbox2)
-        checkboxContainer2.appendChild(label2);
     });
 
-    row.appendChild(checkboxContainer1);
-    row.appendChild(checkboxContainer2);
+    let c_item1 =  new Choices(multiSelect1, {
+        removeItemButton: true,
+        placeholder: true,
+        placeholderValue: 'Select activities',
+        searchPlaceholderValue: 'Search activities'
+    });
+    let c_item2 = new Choices(multiSelect2, {
+        removeItemButton: true,
+        placeholder: true,
+        placeholderValue: 'Select activities',
+        searchPlaceholderValue: 'Search activities'
+    });
 
-    const deleteButton = document.createElement('input');
-    deleteButton.type = 'checkbox';
-    deleteButton.id = id + '_delete';
+    if (!out1active) {
+        c_item1.disable();
+    }
 
-    row.appendChild(deleteButton);
+    if (!out2active) {
+        c_item2.disable();
+    }
 
     mainTile.appendChild(row);
 
@@ -312,7 +311,7 @@ function write() {
     validateJson({ sources: sources })
     submitForm({ sources: sources });
     setTimeout(() => {
-        loadCurrentSources();
+        loadAllCurrentSources();
     }, 500);
 }
 

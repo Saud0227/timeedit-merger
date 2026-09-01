@@ -224,11 +224,6 @@ async def index():
 # Admin API
 # ---------
 
-@app.get("/api/dynamic")
-async def get_dynamic_api(authorization: Optional[str] = Header(None)):
-    # check_admin(None, authorization)
-    return get_dynamic()
-
 @app.post("/api/refresh")
 async def refresh_api(authorization: Optional[str] = Header(None)):
     # check_admin(None, authorization)
@@ -268,6 +263,80 @@ async def get_status_api():
         "sources_count": len(dyn.get("sources", {})),
         "external_url": opt.get("external_url", ""),
     }
+
+# source routes
+
+@app.get("/api/sources")
+async def index_sources_api(authorization: Optional[str] = Header(None)):
+    # check_admin(None, authorization)
+    dyn = get_dynamic()
+    return dyn.get("sources", {})
+
+@app.put("/api/sources")
+async def create_source_api(data: Dict[str, Any], authorization: Optional[str] = Header(None)):
+    # check_admin(None, authorization)
+    # check that data has name and url fields populated
+    if "name" not in data or not isinstance(data["name"], str) or not data["name"].strip():
+        raise HTTPException(status_code=400, detail="Missing or invalid 'name' field")
+    if "url" not in data or not isinstance(data["url"], str) or not data["url"].strip():
+        raise HTTPException(status_code=400, detail="Missing or invalid 'url' field")
+    # check that url is a valid URL
+    res = await load_ics(data["url"], get_options().get("timeout_seconds", 20))
+    if res is None:
+        raise HTTPException(status_code=400, detail=f"Could not load ICS from {data['url']}")
+    # create new source with unique salt
+    salt = generate_secure_token()
+    dyn = get_dynamic()
+    dyn["sources"][salt] = {
+        "name": data["name"],
+        "url": data["url"],
+        "output1": {"enabled": False, "allowed": []},
+        "output2": {"enabled": False, "allowed": []},
+    }
+    validate_dynamic_config(dyn)
+    save_dynamic(dyn)
+
+    return {"status": "ok", "res": salt}
+
+@app.get("/api/sources/{salt}")
+async def get_source_api(salt: str, authorization: Optional[str] = Header(None)):
+    # check_admin(None, authorization)
+    dyn = get_dynamic()
+    source = dyn.get("sources", {}).get(salt)
+    if not source:
+        raise HTTPException(status_code=404, detail=f"Source with salt {salt} not found")
+    return {"source": source}
+
+@app.delete("/api/sources/{salt}")
+async def delete_source_api(salt: str, authorization: Optional[str] = Header(None)):
+    # check_admin(None, authorization)
+    dyn = get_dynamic()
+    if salt in dyn["sources"]:
+        del dyn["sources"][salt]
+        validate_dynamic_config(dyn)
+        save_dynamic(dyn)
+    return {"status": "ok"}
+
+@app.put("/api/sources/{salt}")
+async def update_source_api(salt: str, data: Dict[str, Any], authorization: Optional[str] = Header(None)):
+    # check_admin(None, authorization)
+    dyn = get_dynamic()
+    if salt not in dyn["sources"]:
+        raise HTTPException(status_code=404, detail=f"Source with salt {salt} not found")
+    # Update the source
+    dyn["sources"][salt].update(data)
+    validate_dynamic_config(dyn)
+    save_dynamic(dyn)
+    return {"status": "ok"}
+
+@app.get("/api/dynamic")
+async def get_dynamic_api(authorization: Optional[str] = Header(None)):
+    # check_admin(None, authorization)
+    dyn = get_dynamic()
+    # remove sources from dyn
+    dyn_copy = dyn.copy()
+    dyn_copy.pop("sources", None)
+    return dyn_copy
 
 @app.put("/api/dynamic")
 async def put_dynamic_api(data: Dict[str, Any], authorization: Optional[str] = Header(None)):

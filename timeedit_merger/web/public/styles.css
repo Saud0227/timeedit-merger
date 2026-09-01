@@ -7,7 +7,17 @@
     --ultramarin: #200c9c;
     --granitgra: #f0f0f0;
     --kolgra: #222222;
-    --andesitgra: #6F6D6D
+    --andesitgra: #6F6D6D;
+    --ha-background: #1e1e1e;
+    --choices-primary-color: #4b0082;
+    --choices-item-color: #f0f0f0;
+    --choices-bg-color: #1e1e1e;
+    --choices-bg-color-dropdown: #1e1e1e;
+    --choices-keyline-color: #3b3e40;
+    --choices-bg-color-disabled: #181a1b;
+    --choices-item-disabled-color: #eee;
+    --choices-disabled-color: #2d2d2d;
+    --choices-highlighted-color: rgb(90 59 120);
 }
 
 * {
@@ -18,8 +28,8 @@
 body {
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
     margin: 0;
-    padding: 20px;
-    background-color: var(--kolgra);
+    padding: 10px;
+    background-color: var(--ha-background);
 }
 
 h1 {
@@ -38,12 +48,10 @@ main {
     grid-template-rows: min-content 1fr min-content;
     grid-template-columns: 1fr;
     grid-template-areas: "hd" "." "as";
-}
-
-main > * {
-    border-radius: 8px;
     border: solid 2px var(--andesitgra);
-    /*box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);*/
+    background-color: var(--kolgra);
+    border-radius: 16px;
+    padding: 10px;
 }
 
 
@@ -52,72 +60,44 @@ div#main-content {
     flex-direction: column;
 }
 
-a.feed-item {
-    display: flex;
-    margin: 0;
-    padding: 2px;
-    border: solid 2px var(--andesitgra);
-    border-radius: 8px;
-    text-decoration: none;
-    height: fit-content;
-    width: fit-content;
-    justify-self: center;
-    align-self: center;
-    user-select: none;
-}
-a.feed-item > label {
-    margin: 0;
-    padding: 0 5px;
-    user-select: none;
-}
-
-a.feed-item[feed-enabled = "true"] {
-    border-color: #00ff00;
-}
-
-a.feed-item[feed-enabled = "true"] > label {
-    color: #00ff00;
-}
-
-a.feed-item[feed-enabled = "false"] {
-    border-color: #ff0000;
-}
-
-a.feed-item[feed-enabled = "false"] > label {
-    color: #ff0000;
-}
-
-a.feed-item > label {
-    text-decoration: none;
-}
-
-a.feed-item > input {
-    background: transparent;
-    border: none;
-    color: var(--granitgra);
-}
-
 /*-----------------------------------------*/
-
-div.source-row#header-row {
-    background-color: var(--andesitgra);
-}
-
-div.source-row#header-row > h2 {
-    margin: 0;
-    padding: 10px 0;
-    color: var(--granitgra);
-    user-select: none;
-}
 
 div.source-row {
     display: grid;
-    grid-template-columns: 20% 23% 25% 25% 7%;
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: min-content min-content min-content;
+    column-gap: 20px;
+    row-gap: 10px;
     min-height: 30px;
-    padding: 0 20px;
+    margin: 0 16px;
+    padding: 10px 4px;
+    border-top: solid 2px var(--andesitgra);
+    grid-template-areas:
+        "hd hd"
+        "label1 label2"
+        "select1 select2";
 }
 
-div.source-row > input {
+div.source-header {
+    grid-area: hd;
+    display: grid;
+    grid-template-columns: auto 40px;
+    grid-template-rows: min-content min-content;
+    grid-template-areas: ". ." "url url";
+}
+
+div.source-header > input:first-child {
+/*    header text*/
+    font-size: 20px;
+    font-weight: bold;
+    margin: 0 0 10px 0;
+}
+
+div.source-header > input:nth-child(2) {
+    grid-area: url;
+}
+
+div.source-header > input {
     background: transparent;
     border: none;
     color: var(--granitgra);
@@ -133,42 +113,6 @@ div.checkbox-container > label {
     align-self: center;
     user-select: none;
 }
-
-div.checkbox-container > label > input {
-    margin: 0 0 0 5px;
-}
-
-div.checkbox-container > label > input:checked {
-    accent-color: green;
-
-}
-
-div.source-row > input[type="checkbox"] {
-    background: var(--kolgra);
-    margin: 0;
-    accent-color: transparent;
-    -webkit-appearance: none;
-    border: solid 1px var(--andesitgra);
-    height: 28px;
-    width: 28px;
-    align-self: center;
-    justify-self: center;
-}
-
-div.source-row > input[type="checkbox"]:checked {
-    accent-color: #FF0000;
-    color: #FF0000;
-    background-color: #FF0000;
-    border-color: #FF0000;
-}
-
-div.source-row > input[type="checkbox"]:checked:before {
-    content: "x";
-    display: block;
-    color: var(--granitgra);
-    font-size: 28px;
-    text-align: center;
-    line-height: 28px;}
 
 
 /*-----------------------------------------*/
