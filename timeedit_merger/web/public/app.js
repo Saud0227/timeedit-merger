@@ -22,6 +22,13 @@ document.addEventListener('DOMContentLoaded', function () {
     })
     getAllCategories();
 
+    const element = document.getElementById("choices-multiple-remove-button");
+    const multipleCancelButton = new Choices(element, {
+            allowHTML: true,
+            removeItemButton: true,
+          }
+        );
+
     loadCurrentSources();
     document.getElementById('new-source-button').addEventListener('click', createEmptySourceRow);
     document.getElementById('reset-button').addEventListener('click', loadCurrentSources);
