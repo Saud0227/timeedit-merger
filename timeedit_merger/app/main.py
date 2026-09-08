@@ -263,9 +263,9 @@ async def get_status_api():
         "sources_count": len(dyn.get("sources", {})),
         "external_url": opt.get("external_url", ""),
     }
-
-# source routes
-
+# -----------
+# CRUD source
+# -----------
 @app.get("/api/sources")
 async def index_sources_api(authorization: Optional[str] = Header(None)):
     # check_admin(None, authorization)

@@ -31,7 +31,8 @@ document.addEventListener('DOMContentLoaded', function () {
     //         removeItemButton: true,
     //       }
     // );
-    document.getElementById('new-source-button').addEventListener('click', createEmptySourceRow);
+    document.getElementById('new-source-button').addEventListener('click', openPopup);
+    document.getElementById('new-source-cancel').addEventListener('click', closePopup);
     document.getElementById('reset-button').addEventListener('click', loadAllCurrentSources);
     document.getElementById('refresh-cache-button').addEventListener('click', refreshCache);
     saveButton.addEventListener('click', write);
@@ -108,6 +109,20 @@ function resetSourceRows() {
     while (mainTile.children.length > 0) {
         mainTile.removeChild(mainTile.lastChild);
     }
+}
+
+function openPopup() {
+    const popup = document.getElementById('popup-container');
+    // remove the bool atribute hidden and set aria-expanded to true
+    popup.removeAttribute('hidden');
+    popup.setAttribute('aria-expanded', 'true');
+}
+
+function closePopup() {
+    const popup = document.getElementById('popup-container');
+    // set the bool atribute hidden and set aria-expanded to false
+    popup.setAttribute('hidden', 'true');
+    popup.setAttribute('aria-expanded', 'false');
 }
 
 function createEmptySourceRow() {
