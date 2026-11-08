@@ -191,7 +191,21 @@ function submitEdit(id) {
 }
 
 function deleteSource(id) {
-    console.log('Deleting source: ' + id);
+    // delete to endpoint api/sources/{id} with DELETE method
+    fetch('api/sources/' + id, {
+        method: 'DELETE'
+    })
+        .then(response => {
+            if (response.status !== 200) {
+                throw new Error('Failed to delete source from server: ' + response.statusText);
+            }
+            // remove the source row from the DOM
+            const row = document.getElementById(id);
+            row.parentNode.removeChild(row);
+        })
+        .catch(error => {
+            alert('Error deleting source from server: ' + error.message);
+        });
 }
 
 function createNewSource(event) {
@@ -419,7 +433,7 @@ function createSourceRow(id, source) {
     confirmDeleteButton.innerText = 'Delete';
     confirmDeleteButton.addEventListener('click', () => {
         // temp
-        console.log("Deleting source: " + id);
+        deleteSource(id);
     });
     buttonContainer.appendChild(confirmDeleteButton);
 
