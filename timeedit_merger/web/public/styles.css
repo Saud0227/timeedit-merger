@@ -60,6 +60,15 @@ div#main-content {
     flex-direction: column;
 }
 
+div#main-content:empty::before {
+    content: "No sources available - create a new source to get started";
+    display: block;
+    text-align: center;
+    color: var(--andesitgra);
+    font-style: italic;
+    margin-bottom: 20px;
+}
+
 /*-----------------------------------------*/
 
 div.source-row {
@@ -80,10 +89,28 @@ div.source-row {
 
 div.source-header {
     grid-area: hd;
+    position: relative;
     display: grid;
-    grid-template-columns: auto 40px;
+    grid-template-columns: auto 40px 40px;
     grid-template-rows: min-content min-content;
-    grid-template-areas: ". ." "url url";
+    grid-template-areas: ". . ." "url url url";
+}
+
+button.edit-button {
+    background: transparent;
+    padding: 0;
+    font-size: 16px;
+    cursor: pointer;
+    user-select: none;
+    border:none
+}
+
+button.edit-button > span {
+    color: var(--granitgra);
+    transition: 0.3s;
+}
+button.edit-button:hover > span{
+    color: var(--magenta) !important;
 }
 
 div.source-header > input:first-child {
@@ -99,8 +126,12 @@ div.source-header > input:nth-child(2) {
 
 div.source-header > input {
     background: transparent;
-    border: none;
+    border: var(--andesitgra) solid 1px;
     color: var(--granitgra);
+}
+
+div.source-header > input[disabled] {
+    border:none;
 }
 
 div.checkbox-container {

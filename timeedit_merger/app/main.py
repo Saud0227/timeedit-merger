@@ -272,7 +272,7 @@ async def index_sources_api(authorization: Optional[str] = Header(None)):
     dyn = get_dynamic()
     return dyn.get("sources", {})
 
-@app.put("/api/sources")
+@app.post("/api/sources")
 async def create_source_api(data: Dict[str, Any], authorization: Optional[str] = Header(None)):
     # check_admin(None, authorization)
     # check that data has name and url fields populated

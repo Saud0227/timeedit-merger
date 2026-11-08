@@ -125,26 +125,29 @@ function closePopup() {
     popup.setAttribute('aria-expanded', 'false');
 }
 
-function createEmptySourceRow() {
-    // getJsonViaApi('api/salt', (data) => {
-    //     const newId = data.salt;
-    //     const emptySource = {
-    //         name: '',
-    //         url: '',
-    //         output1: {
-    //             enabled: false,
-    //             allowed: []
-    //         },
-    //         output2: {
-    //             enabled: false,
-    //             allowed: []
-    //         }
-    //     }
-    //     createSourceRow(newId, emptySource);
-    // });
-    console.log("Discontinued")
+function enableEdit(id) {
+    // get name and url input fields and remove the disabled attribute
+    const nameInput = document.getElementById(id + '_name');
+    const urlInput = document.getElementById(id + '_url');
+    nameInput.removeAttribute('disabled');
+    urlInput.removeAttribute('disabled');
+
+    // change the edit button to a save button
+    const editButton = document.getElementById(id + '_edit');
+    editButton.removeEventListener('click', () => {
+        enableEdit(id);
+    });
+    editButton.addEventListener('click', () => {
+        submitEdit(id);
+    });
+    // get the material icon and change it to save
+    const materialIcon = editButton.querySelector('.material-symbols-rounded');
+    materialIcon.innerText = 'save_as';
 }
 
+function submitEdit(id) {
+    console.log('Work in progress....');
+}
 
 function createSourceRow(id, source) {
     const row = document.createElement('div');
@@ -159,16 +162,29 @@ function createSourceRow(id, source) {
     name.value = source.name || '';
     name.placeholder = 'Name...';
     name.id = id + '_name'
+    name.setAttribute('disabled', 'true');
     headerDiv.appendChild(name);
 
     const url = document.createElement('input');
     url.type = 'text';
     url.value = source.url || '';
     url.placeholder = 'URL...';
+    url.setAttribute('disabled', 'true');
     url.id = id + '_url'
     headerDiv.appendChild(url);
 
     // edit button
+    const editButton = document.createElement('button');
+    editButton.id = id + '_edit';
+    editButton.classList.add('edit-button');
+    const materialIconEdit = document.createElement('span');
+    materialIconEdit.classList.add('material-symbols-rounded');
+    materialIconEdit.innerText = 'edit';
+    editButton.appendChild(materialIconEdit);
+    editButton.addEventListener('click', () => {
+        enableEdit(id);
+    });
+    headerDiv.appendChild(editButton);
 
     row.appendChild(headerDiv);
 
@@ -239,13 +255,13 @@ function createSourceRow(id, source) {
     let c_item1 =  new Choices(multiSelect1, {
         removeItemButton: true,
         placeholder: true,
-        placeholderValue: 'Select activities',
+        placeholderValue: out1active ? 'Select activities' : 'Output not active',
         searchPlaceholderValue: 'Search activities'
     });
     let c_item2 = new Choices(multiSelect2, {
         removeItemButton: true,
         placeholder: true,
-        placeholderValue: 'Select activities',
+        placeholderValue: out2active ? 'Select activities' : 'Output not active',
         searchPlaceholderValue: 'Search activities'
     });
 
