@@ -72,6 +72,7 @@ div#main-content:empty::before {
 /*-----------------------------------------*/
 
 div.source-row {
+    position: relative;
     display: grid;
     grid-template-columns: 1fr 1fr;
     grid-template-rows: min-content min-content min-content;
@@ -96,6 +97,83 @@ div.source-header {
     grid-template-areas: ". . ." "url url url";
 }
 
+div.source-row-cover {
+/*    this sits on top of the source row */
+    position: absolute;
+    /*height width is parent container */
+    inset: 0;
+    background-color: rgba(0, 0, 0, 0.9);
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+}
+
+div.source-row-cover[hidden] {
+    display: none;
+}
+
+div.source-row-cover > span.warning-symbol {
+    font-size: 48px;
+    color: darkorange;
+    margin-bottom: 5px;
+}
+
+div.source-row-cover > h2 {
+    color: var(--granitgra);
+    margin: 0;
+    margin-bottom: 5px;
+}
+
+div.source-row-cover > p {
+    color: var(--granitgra);
+    margin: 0;
+    text-align: center;
+    max-width: 300px;
+}
+
+div.button-container {
+    display: flex;
+    gap: 10px;
+    margin: 10px 0 5px 0;
+}
+
+button.cancel-delete-button {
+    background: transparent;
+    font-size: 16px;
+    cursor: pointer;
+    user-select: none;
+
+    border: solid 1px var(--andesitgra);
+    border-radius: 8px;
+    transition: 0.3s ease-in-out;
+    padding: 5px 10px;
+}
+button.cancel-delete-button:hover {
+    border-color: var(--magenta);
+    color: var(--magenta);
+}
+
+
+button.confirm-delete-button {
+    background: transparent;
+    font-size: 16px;
+    cursor: pointer;
+    user-select: none;
+
+    border: solid 1px var(--andesitgra);
+    border-radius: 8px;
+    transition: 0.3s ease-in-out;
+    padding: 5px 10px;
+}
+
+button.confirm-delete-button:hover {
+    border-color: red;
+    color: red;
+}
+
+
 button.edit-button {
     background: transparent;
     padding: 0;
@@ -110,6 +188,23 @@ button.edit-button > span {
     transition: 0.3s;
 }
 button.edit-button:hover > span{
+    color: var(--magenta) !important;
+}
+
+button.delete-button {
+    background: transparent;
+    padding: 0;
+    font-size: 16px;
+    cursor: pointer;
+    user-select: none;
+    border:none
+}
+
+button.delete-button > span {
+    color: var(--granitgra);
+    transition: 0.3s;
+}
+button.delete-button:hover > span{
     color: var(--magenta) !important;
 }
 

@@ -145,6 +145,17 @@ function enableEdit(id) {
     materialIcon.innerText = 'save_as';
 }
 
+function setDeleteDialog(id, show) {
+    const sourceRowCover = document.getElementById(id + '_cover');
+    if (show) {
+        sourceRowCover.removeAttribute('hidden');
+        sourceRowCover.setAttribute('aria-expanded', 'true');
+    } else {
+        sourceRowCover.setAttribute('hidden', 'true');
+        sourceRowCover.setAttribute('aria-expanded', 'false');
+    }
+}
+
 function submitEdit(id) {
     console.log('Work in progress....');
 }
@@ -185,6 +196,19 @@ function createSourceRow(id, source) {
         enableEdit(id);
     });
     headerDiv.appendChild(editButton);
+
+    // delete button
+    const deleteButton = document.createElement('button');
+    deleteButton.id = id + '_delete';
+    deleteButton.classList.add('delete-button');
+    const materialIconDelete = document.createElement('span');
+    materialIconDelete.classList.add('material-symbols-rounded');
+    materialIconDelete.innerText = 'delete';
+    deleteButton.appendChild(materialIconDelete);
+    deleteButton.addEventListener('click', () => {
+        setDeleteDialog(id, true);
+    });
+    headerDiv.appendChild(deleteButton);
 
     row.appendChild(headerDiv);
 
@@ -273,6 +297,60 @@ function createSourceRow(id, source) {
         c_item2.disable();
     }
 
+    // add the source row cover, init with hidden and aria-expanded false
+    const sourceRowCover = document.createElement('div');
+    sourceRowCover.id = id + '_cover';
+    sourceRowCover.classList.add('source-row-cover');
+    sourceRowCover.setAttribute('hidden', 'true');
+    sourceRowCover.setAttribute('aria-expanded', 'false');
+
+
+    // warning symbol large
+    const warningSymbol = document.createElement('span');
+    warningSymbol.classList.add('material-symbols-rounded');
+    warningSymbol.classList.add('warning-symbol');
+    warningSymbol.innerText = 'warning';
+    sourceRowCover.appendChild(warningSymbol);
+
+    // add "delete?" text to the cover
+    const deleteText = document.createElement('h2');
+    deleteText.innerText = 'Delete?';
+    sourceRowCover.appendChild(deleteText);
+
+    // add "Are you sure you want to delete this source?" text to the cover
+    const deleteText2 = document.createElement('p');
+    deleteText2.innerText = 'Are you sure you want to delete this source?';
+    sourceRowCover.appendChild(deleteText2);
+
+    // horizontal split div (flexbox) for the cancel and confirm buttons
+    const buttonContainer = document.createElement('div');
+    buttonContainer.classList.add('button-container');
+
+    // cancel delete button, text is "Cancel" no icon
+    const cancelDeleteButton = document.createElement('button');
+    cancelDeleteButton.id = id + '_cancel_delete';
+    cancelDeleteButton.classList.add('cancel-delete-button');
+    cancelDeleteButton.innerText = 'Cancel';
+
+    cancelDeleteButton.addEventListener('click', () => {
+        setDeleteDialog(id, false);
+    });
+    buttonContainer.appendChild(cancelDeleteButton);
+
+    // confirm delete button
+    const confirmDeleteButton = document.createElement('button');
+    confirmDeleteButton.id = id + '_confirm_delete';
+    confirmDeleteButton.classList.add('confirm-delete-button');
+    confirmDeleteButton.innerText = 'Delete';
+    confirmDeleteButton.addEventListener('click', () => {
+        // temp
+        console.log("Deleting source: " + id);
+    });
+    buttonContainer.appendChild(confirmDeleteButton);
+
+    sourceRowCover.appendChild(buttonContainer);
+    row.appendChild(sourceRowCover);
+
     mainTile.appendChild(row);
 
 }
@@ -284,6 +362,8 @@ function write() {
     for (let i = 1; i < mainTile.children.length; i++) {
         const row = mainTile.children[i];
         const id = row.id;
+
+        console.log("WE ARE WRITING SOURCE: " + id);
 
         const deleteCheckbox = document.getElementById(id + '_delete');
         if (deleteCheckbox.checked) {
