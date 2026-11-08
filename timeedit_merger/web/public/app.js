@@ -35,6 +35,10 @@ document.addEventListener('DOMContentLoaded', function () {
     document.getElementById('new-source-cancel').addEventListener('click', closePopup);
     document.getElementById('reset-button').addEventListener('click', loadAllCurrentSources);
     document.getElementById('refresh-cache-button').addEventListener('click', refreshCache);
+    document.getElementById('new-source-submit').addEventListener('click', createNewSource);
+    document.getElementById('new-source-form').addEventListener('input', () => {
+        document.getElementById('new-source-submit').disabled = !document.getElementById('new-source-form').checkValidity();
+    });
     saveButton.addEventListener('click', write);
     console.log('Application loaded');
 });
@@ -78,6 +82,32 @@ function getJsonViaApi(api_endpoint, callback) {
         .catch(error => {
             alert('Error fetching JSON from server: ' + error.message);
             return null;
+        });
+}
+
+function postJsonViaApi(api_endpoint, data, callback, failedCallback = null) {
+    console.log('Posting JSON to server: ' + JSON.stringify(data, null, 0));
+
+    fetch(api_endpoint, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(data, null, 0)
+    })
+        .then(response => {
+            if (response.status !== 200) {
+                if (failedCallback) {
+                    response.json().then(data => failedCallback(data));
+                } else {
+                    throw new Error('Failed to post JSON to server: ' + response.statusText);
+                }
+            }
+            response.json().then(data => callback(data));
+        })
+        .catch(error => {
+            console.error('Error posting JSON to server: ', error);
+            alert('Error posting JSON to server: ' + error.message);
         });
 }
 
@@ -158,6 +188,51 @@ function setDeleteDialog(id, show) {
 
 function submitEdit(id) {
     console.log('Work in progress....');
+}
+
+function deleteSource(id) {
+    console.log('Deleting source: ' + id);
+}
+
+function createNewSource(event) {
+
+    event.preventDefault();
+
+
+    const name = document.getElementById('source-name').value;
+    const url = document.getElementById('source-url').value;
+
+
+
+    postJsonViaApi('api/sources', { name: name, url: url }, (data) => {
+        console.log(data);
+        if (data.status === 'ok') {
+            closePopup();
+            const newSource = {
+                name: name,
+                url: url,
+                output1: {
+                    enabled: false,
+                    allowed: []
+                },
+                output2: {
+                    enabled: false,
+                    allowed: []
+                }
+            };
+            createSourceRow(data.res, newSource);
+        }
+    }, (error) => {
+        // get detail from error and show it in an alert
+        console.log('Error creating new source:', error);
+        console.log(error.detail)
+
+        if (error && error.detail && error.detail.startsWith("Could not load ICS from")) {
+            alert("Could not load ICS from the provided URL. Please check the URL and try again.");
+        } else {
+            alert('Error creating new source: ' + (error.response ? error.response.detail : error.message));
+        }
+    });
 }
 
 function createSourceRow(id, source) {

@@ -329,8 +329,8 @@ aside > button[heavy][success] {
 }
 
 #new-source-submit {
-    color: var(--kolgra);
-    background-color: var(--andesitgra);
+    color: var(--granitgra);
+    background-color: var(--kolgra);
     /*border: solid 2px var(--andesitgra);*/
     padding: 10px 20px;
     font-size: 16px;
@@ -338,7 +338,19 @@ aside > button[heavy][success] {
     border-radius: 8px;
     transition: 0.3s ease-in-out;
     user-select: none;
-    border: none;
+    border: 2px solid var(--andesitgra);
+}
+/*if not disabled */
+#new-source-submit:not([disabled]) {
+    background-color: var(--andesitgra);
+    color: var(--kolgra);
+}
+
+
+#new-source-submit:not([disabled]):hover {
+    color: var(--granitgra);
+    background-color: var(--magenta);
+    border-color: var(--magenta);
 }
 
 #new-source-cancel {
@@ -362,10 +374,6 @@ aside > button[heavy][success] {
 }
 #new-source-cancel:hover > span{
     color: var(--magenta) !important;
-}
-
-#new-source-submit:hover {
-    background-color: var(--magenta);
 }
 
 .hidden {

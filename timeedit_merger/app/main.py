@@ -283,6 +283,7 @@ async def create_source_api(data: Dict[str, Any], authorization: Optional[str] =
     # check that url is a valid URL
     res = await load_ics(data["url"], get_options().get("timeout_seconds", 20))
     if res is None:
+        print("Could not load ICS from {data['url']}")
         raise HTTPException(status_code=400, detail=f"Could not load ICS from {data['url']}")
     # create new source with unique salt
     salt = generate_secure_token()
