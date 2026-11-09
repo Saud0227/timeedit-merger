@@ -41,6 +41,9 @@ options:
     output2:
         name: Public
         enabled: false
+    focus:
+        name: Focus
+        enabled: false
 schema:
     admin_token: str(43,43)
     feed_tokens: str(43,43)
@@ -56,6 +59,10 @@ schema:
         salt: str(43,43)
         enabled: bool
     output2:
+        name: str
+        salt: str(43,43)
+        enabled: bool
+    focus:
         name: str
         salt: str(43,43)
         enabled: bool

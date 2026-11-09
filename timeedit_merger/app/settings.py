@@ -99,7 +99,8 @@ DEFAULT_OPTIONS: Dict[str, Any] = {
     "auto_save_delay": 1500,
     "categories": ["föreläsning", "handledning", "räkneövning", "seminarium", "datorlaboration"],
     "output1": {"name": "Private", "salt": _PLACEHOLDER_SALT_TOKEN, "enabled": True},
-    "output2": {"name": "Public", "salt": _PLACEHOLDER_SALT_TOKEN, "enabled": True}
+    "output2": {"name": "Public", "salt": _PLACEHOLDER_SALT_TOKEN, "enabled": True},
+    "focus": {"name": "Focus", "salt": _PLACEHOLDER_SALT_TOKEN, "enabled": False}
 }
 
 DEFAULT_DYNAMIC: Dict[str, Any] = {
@@ -111,6 +112,7 @@ DEFAULT_DYNAMIC: Dict[str, Any] = {
         #    "output2": {"enabled": true, "allowed": ["*"]}
         # }
     },
+    "focus_url": "https://boka.ftek.se/api/reservations"
 }
 
 @dataclass

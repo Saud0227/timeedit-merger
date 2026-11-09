@@ -35,6 +35,59 @@ def get_options():
     return SNAPSHOT.options or {}
 
 # -----------------------------------
+# Focus calendar handling
+# -----------------------------------
+
+def get_focus_calendar(url, start, end) -> Dict[str, Any]:
+    """
+    :param url: focus calendar API URL
+    :param start: diff from now in days, e.g. -7 for 7 days ago
+    :param end: diff from now in days, e.g. 30 for 30 days in the future
+    :return: array of dicts of events
+    """
+
+    start = int((datetime.now(timezone.utc) + timedelta(days=start)).timestamp() * 1000)
+    end = int((datetime.now(timezone.utc) + timedelta(days=end)).timestamp() * 1000)
+    full_url = f"{url}?startTime={start}&endTime={end}&recurringAsOne=false"
+    try:
+        response = httpx.get(full_url, timeout=10)
+        response.raise_for_status()
+        return response.json()
+    except Exception as e:
+        print(f"Error loading focus calendar from {full_url}: {e}")
+        return []
+
+def create_vevent_from_dict(event_dict: Dict[str, Any]) -> Event:
+    vevent = Event()
+    vevent.add("uid", f"{event_dict.get("id")}@focus.ftek.se")
+
+    is_pending = event_dict.get("status") == "PENDING"
+
+    if is_pending:
+        title = f'Pending: {event_dict.get("type").capitalize()}'
+        desc = f'Waiting for approval, no details available.'
+    else:
+        title = f"{event_dict.get("clientDescription")}: {event_dict.get("clientCommittee")}"
+        desc = f'Client: {event_dict.get("clientName")}, {event_dict.get("clientEmail")}\nType: {event_dict.get("type").capitalize()}'
+    vevent.add("summary", title)
+    vevent.add("description", desc)
+
+    dstart = event_dict.get("startTime")
+    if dstart:
+        vevent.add("dtstart", datetime.fromisoformat(dstart.replace("Z", "+00:00")))
+    dend = event_dict.get("endTime")
+    if dend:
+        vevent.add("dtend", datetime.fromisoformat(dend.replace("Z", "+00:00")))
+
+    location_key = {
+        1: "Bardel",
+        2: "Mittendel",
+        3: "Guran"
+    }
+
+    vevent.add("location", location_key.get(event_dict.get("venueId"), "Unknown Venue"))
+    return vevent
+# -----------------------------------
 # Calendar import, filter and parsing
 # -----------------------------------
 
@@ -155,6 +208,24 @@ async def reload_cached_feeds():
         _FEEDS_CACHE[options["output1"]["salt"]] = build_ics(output1_events, options["output1"]["name"])
     if options["output2"]["enabled"]:
         _FEEDS_CACHE[options["output2"]["salt"]] = build_ics(output2_events, options["output2"]["name"])
+
+
+    # focus calendar
+    # before = get day of the week, e.g. Monday is 0, Sunday is 6
+    # set before to -7 if today is Monday -8 if today is Tuesday, etc. to get last Monday
+    today = datetime.now(timezone.utc)
+    before = -today.weekday() - 7
+    # after get 90 days in the future
+    after = 90
+    focus_url = get_dynamic().get("focus_url")
+
+    raw_f_data = get_focus_calendar(focus_url, before, after)
+
+    f_events = [create_vevent_from_dict(ev_dict) for ev_dict in raw_f_data]
+
+    if options.get("focus", {}).get("enabled"):
+        _FEEDS_CACHE[options["focus"]["salt"]] = build_ics(f_events, options["focus"]["name"])
+
 
     _LAST_REFRESH = utc_now().isoformat()
     _LAST_ERROR = None
@@ -386,6 +457,8 @@ async def feed(feed_salt: str, authorization: Optional[str] = Header(None)):
     # Get feed based on salt
     if feed_salt not in _FEEDS_CACHE:
         await reload_cached_feeds()
+
+    print(_FEEDS_CACHE.keys())
 
     ics = _FEEDS_CACHE.get(feed_salt)
     if not ics:
