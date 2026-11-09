@@ -28,6 +28,7 @@ options:
     refresh_minutes: 5
     timeout_seconds: 10
     lookahead_days: 30
+    auto_save_delay: 1500
     categories:
       - föreläsning
       - handledning
@@ -47,6 +48,7 @@ schema:
     refresh_minutes: int(1,1440)
     timeout_seconds: int(1,60)
     lookahead_days: int(1,120)
+    auto_save_delay: int(1, 10000)
     categories:
       - str
     output1:

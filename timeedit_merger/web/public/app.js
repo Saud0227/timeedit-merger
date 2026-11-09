@@ -6,8 +6,9 @@ let out1 = ""
 let out1active = false
 let out2 = ""
 let out2active = false
-const saveButton = document.getElementById('save');
 let editButtonTimers={}
+let autoSaveTimers = {}
+let autoSaveDelay = 5000 // will be overwritten by the server, default is 5 seconds
 
 function capitalizeFirstLetter(string) {
     return string.charAt(0).toUpperCase() + string.slice(1);
@@ -22,6 +23,7 @@ document.addEventListener('DOMContentLoaded', function () {
         out1active = state.output1_enabled
         out2 = state.output2_name
         out2active = state.output2_enabled
+        autoSaveDelay = state.auto_save_delay || 5000;
         // when we know out1 and out2 we can load the current sources
         loadAllCurrentSources();
     })
@@ -40,7 +42,6 @@ document.addEventListener('DOMContentLoaded', function () {
     document.getElementById('new-source-form').addEventListener('input', () => {
         document.getElementById('new-source-submit').disabled = !document.getElementById('new-source-form').checkValidity();
     });
-    saveButton.addEventListener('click', write);
     console.log('Application loaded');
 });
 
@@ -169,6 +170,10 @@ function enableEdit(id) {
     // change the edit button to a save button
     const editButton = document.getElementById(id + '_edit');
 
+    // hide save state button
+    const saveStateButton = document.getElementById(id + '_save_state');
+    saveStateButton.classList.add('hidden');
+
     editButton.onclick = () => submitEdit(id);
     // get the material icon and change it to save
     const materialIcon = editButton.querySelector('.material-symbols-rounded');
@@ -198,7 +203,7 @@ function submitEdit(id) {
     const materialIcon = editButton.querySelector('.material-symbols-rounded');
     materialIcon.innerText = 'autorenew';
     materialIcon.classList.add('spin');
-    console.log("Add spin")
+
 
 
 
@@ -214,8 +219,12 @@ function submitEdit(id) {
             // get the material icon and change it to edit
             const materialIcon = editButton.querySelector('.material-symbols-rounded');
             materialIcon.classList.remove('spin');
-            console.log("Kill spin")
+
             editButton.removeAttribute('disabled');
+
+            // restore the save state button
+            const saveStateButton = document.getElementById(id + '_save_state');
+            saveStateButton.classList.remove('hidden');
 
             // set to checkbox for 1 second to show that the save was successful
             materialIcon.innerText = 'check';
@@ -225,7 +234,7 @@ function submitEdit(id) {
                 clearTimeout(editButtonTimers[id]);
             }
             editButtonTimers[id] = setTimeout(() => {
-                materialIcon.innerText = 'edit';
+                materialIcon.innerText = 'edit_square';
                 editButtonTimers[id] = null;
             }, 2000);
         }
@@ -311,13 +320,35 @@ function createSourceRow(id, source) {
     const headerDiv = document.createElement('div');
     headerDiv.classList.add('source-header');
 
+    const nameAndSaveStateDiv = document.createElement('div');
+    nameAndSaveStateDiv.classList.add('name-and-save-state');
+
     const name = document.createElement('input')
     name.type = 'text';
     name.value = source.name || '';
     name.placeholder = 'Name...';
     name.id = id + '_name'
     name.setAttribute('disabled', 'true');
-    headerDiv.appendChild(name);
+    nameAndSaveStateDiv.appendChild(name);
+
+    headerDiv.appendChild(nameAndSaveStateDiv);
+
+    const saveStateButton = document.createElement('button');
+    saveStateButton.classList.add('save-state-button');
+    saveStateButton.id = id + '_save_state';
+    const materialIconSaveState = document.createElement('span');
+    materialIconSaveState.classList.add('material-symbols-rounded');
+    materialIconSaveState.innerText = 'check';
+    saveStateButton.appendChild(materialIconSaveState);
+    nameAndSaveStateDiv.appendChild(saveStateButton);
+
+    // add listener to saveStateButton to show a checkmark for 1 second when clicked
+    saveStateButton.addEventListener('click', () => {
+        saveSourceRowOutputs(id);
+    });
+
+    // init autosave timer for this source row
+    autoSaveTimers[id] = null;
 
     const url = document.createElement('input');
     url.type = 'text';
@@ -333,7 +364,7 @@ function createSourceRow(id, source) {
     editButton.classList.add('edit-button');
     const materialIconEdit = document.createElement('span');
     materialIconEdit.classList.add('material-symbols-rounded');
-    materialIconEdit.innerText = 'edit';
+    materialIconEdit.innerText = 'edit_square';
     editButton.appendChild(materialIconEdit);
     editButton.onclick = () => enableEdit(id);
     headerDiv.appendChild(editButton);
@@ -432,6 +463,15 @@ function createSourceRow(id, source) {
         searchPlaceholderValue: 'Search activities'
     });
 
+    // add listeners to the multiSelects to trigger autoSave when changed
+    multiSelect1.addEventListener('change', () => {
+        scheduleAutoSave(id);
+    });
+
+    multiSelect2.addEventListener('change', () => {
+        scheduleAutoSave(id);
+    });
+
     if (!out1active) {
         c_item1.disable();
     }
@@ -498,75 +538,91 @@ function createSourceRow(id, source) {
 
 }
 
-
-function write() {
-    // get all children till main tile
-    const sources = {};
-    for (let i = 1; i < mainTile.children.length; i++) {
-        const row = mainTile.children[i];
-        const id = row.id;
-
-        console.log("WE ARE WRITING SOURCE: " + id);
-
-        const deleteCheckbox = document.getElementById(id + '_delete');
-        if (deleteCheckbox.checked) {
-            continue; // skip this source if marked for deletion
-        }
-
-        const name = document.getElementById(id + '_name').value;
-        const url = document.getElementById(id + '_url').value;
-
-        let output1 = [];
-        let output2 = [];
-
-        categories.forEach(category => {
-            const checkbox1 = document.getElementById(id + '_output1_' + category);
-            if (checkbox1.checked) {
-                if (category.toLowerCase() === "other") {
-                    output1.push("?");
-                } else {
-                    output1.push(category.toLowerCase());
-                }
-            }
-
-            const checkbox2 = document.getElementById(id + '_output2_' + category);
-            if (checkbox2.checked) {
-                if (category.toLowerCase() === "other") {
-                    output2.push("?");
-                } else {
-                    output2.push(category.toLowerCase());
-                }
-            }
-        });
-
-        // if all categories are checked, we can simplify the allowed list to just "*"
-        if (output1.length === categories.length ){
-            output1 = ["*"];
-        }
-
-        if (output2.length === categories.length ){
-            output2 = ["*"];
-        }
-
-        sources[id] = {
-            name: name,
-            url: url,
-            output1: {
-                enabled: output1.length > 0,
-                allowed: output1
-            },
-            output2: {
-                enabled: output2.length > 0,
-                allowed: output2
-            }
-        }
-
+function scheduleAutoSave(id) {
+    // clear any existing timer for this source row
+    if (autoSaveTimers[id]) {
+        clearTimeout(autoSaveTimers[id]);
     }
-    validateJson({ sources: sources })
-    submitForm({ sources: sources });
+
+    // set a new timer for this source row
+    autoSaveTimers[id] = setTimeout(() => {
+        saveSourceRowOutputs(id);
+    }, autoSaveDelay);
+
+    // if span is checkmark, change it to a save icon
+    const saveStateButton = document.getElementById(id + '_save_state');
+    const materialIcon = saveStateButton.querySelector('.material-symbols-rounded');
+    if (materialIcon.innerText === 'check') {
+        materialIcon.innerText = 'autorenew';
+        materialIcon.classList.add('spin');
+    }
+}
+
+
+function saveSourceRowOutputs(id) {
+
+    // reset the autoSave timer for this source row
+    if (autoSaveTimers[id]) {
+        clearTimeout(autoSaveTimers[id]);
+    }
+    autoSaveTimers[id] = null;
+
+    // save the output filters for the source row with the given id
+    const multiSelect1 = document.getElementById(id + '_output1');
+    const multiSelect2 = document.getElementById(id + '_output2');
+
+    // lock selects and show loading spinner on save state button
+    multiSelect1.setAttribute('disabled', 'true');
+    multiSelect2.setAttribute('disabled', 'true');
+
+    const saveStateButton = document.getElementById(id + '_save_state');
+    const materialIcon = saveStateButton.querySelector('.material-symbols-rounded');
+    materialIcon.innerText = 'autorenew';
+    materialIcon.classList.add('spin');
+
+    let selectedOptions1 = Array.from(multiSelect1.selectedOptions).map(option => option.value === "other" ? "?" : option.value);
+    let selectedOptions2 = Array.from(multiSelect2.selectedOptions).map(option => option.value === "other" ? "?" : option.value);
+
+    // if all categories are selected, we can simplify the allowed list to just "*"
+    if (selectedOptions1.length === categories.length) {
+        selectedOptions1 = ["*"];
+    }
+
+    if (selectedOptions2.length === categories.length) {
+        selectedOptions2 = ["*"];
+    }
+
+    const data = {
+        output1: {
+            enabled: selectedOptions1.length > 0,
+            allowed: selectedOptions1
+        },
+        output2: {
+            enabled: selectedOptions2.length > 0,
+            allowed: selectedOptions2
+        }
+    };
+
+    postJsonViaApi('api/sources/' + id, data, (response) => {
+        if (response.status === 'ok') {
+            console.log('Successfully saved outputs for source ' + id);
+        } else {
+            console.error('Failed to save outputs for source ' + id + ': ' + response.detail);
+        }
+    }, (error) => {
+        console.error('Error saving outputs for source ' + id + ': ', error);
+    });
+
+    // unlock selects and give save state button the done class for 1 second
+    multiSelect1.removeAttribute('disabled');
+    multiSelect2.removeAttribute('disabled');
+    materialIcon.classList.remove('spin');
+    materialIcon.innerText = 'check';
+    materialIcon.classList.add('done');
+
     setTimeout(() => {
-        loadAllCurrentSources();
-    }, 500);
+        materialIcon.classList.remove('done');
+    }, 1000);
 }
 
 function refreshCache() {

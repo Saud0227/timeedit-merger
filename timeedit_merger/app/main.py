@@ -262,6 +262,7 @@ async def get_status_api():
         "output2_name": opt.get("output2", {}).get("name"),
         "sources_count": len(dyn.get("sources", {})),
         "external_url": opt.get("external_url", ""),
+        "auto_save_delay": opt.get("auto_save_delay"),
     }
 # -----------
 # CRUD source
