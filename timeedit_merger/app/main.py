@@ -200,7 +200,7 @@ async def lifespan(app: FastAPI):
 
     # Any shutdown logic
 
-app = FastAPI(title="TimeEdit Merger", version="0.3.1", lifespan=lifespan)
+app = FastAPI(title="TimeEdit Merger", version="0.3.2", lifespan=lifespan)
 
 # Mount static files
 static_dir = os.path.join(os.path.dirname(__file__), "..", "web", "public")
@@ -334,6 +334,8 @@ async def update_source_api(salt: str, data: Dict[str, Any], authorization: Opti
     save_dynamic(dyn)
     return {"status": "ok"}
 
+
+#  --------- Dynamic config API (for admin UI) ---------
 @app.get("/api/dynamic")
 async def get_dynamic_api(authorization: Optional[str] = Header(None)):
     # check_admin(None, authorization)

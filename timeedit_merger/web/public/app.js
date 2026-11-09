@@ -24,6 +24,25 @@ document.addEventListener('DOMContentLoaded', function () {
         out2 = state.output2_name
         out2active = state.output2_enabled
         autoSaveDelay = state.auto_save_delay || 5000;
+
+        if (out1active) {
+            const output1a = document.getElementById('output1a');
+            output1a.href = state.output1_url;
+            output1a.innerText = out1;
+        } else {
+            const output1a = document.getElementById('output1a');
+            output1a.remove();
+        }
+
+        if (out2active) {
+            const output2a = document.getElementById('output2a');
+            output2a.href = state.output2_url;
+            output2a.innerText = out2;
+        } else {
+            const output2a = document.getElementById('output2a');
+            output2a.remove();
+        }
+
         // when we know out1 and out2 we can load the current sources
         loadAllCurrentSources();
     })
