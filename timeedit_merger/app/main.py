@@ -283,7 +283,6 @@ async def create_source_api(data: Dict[str, Any], authorization: Optional[str] =
     # check that url is a valid URL
     res = await load_ics(data["url"], get_options().get("timeout_seconds", 20))
     if res is None:
-        print("Could not load ICS from {data['url']}")
         raise HTTPException(status_code=400, detail=f"Could not load ICS from {data['url']}")
     # create new source with unique salt
     salt = generate_secure_token()
@@ -318,13 +317,17 @@ async def delete_source_api(salt: str, authorization: Optional[str] = Header(Non
         save_dynamic(dyn)
     return {"status": "ok"}
 
-@app.put("/api/sources/{salt}")
+@app.post("/api/sources/{salt}")
 async def update_source_api(salt: str, data: Dict[str, Any], authorization: Optional[str] = Header(None)):
     # check_admin(None, authorization)
     dyn = get_dynamic()
     if salt not in dyn["sources"]:
         raise HTTPException(status_code=404, detail=f"Source with salt {salt} not found")
-    # Update the source
+    # check ics
+    if "url" in data:
+        res = await load_ics(data["url"], get_options().get("timeout_seconds", 20))
+        if res is None:
+            raise HTTPException(status_code=400, detail=f"Could not load ICS from {data['url']}")
     dyn["sources"][salt].update(data)
     validate_dynamic_config(dyn)
     save_dynamic(dyn)
@@ -349,7 +352,7 @@ async def put_dynamic_api(data: Dict[str, Any], authorization: Optional[str] = H
     save_dynamic(data)
     return {"status": "ok"}
 
-@app.put("/api/dynamic/validate")
+@app.post("/api/dynamic/validate")
 async def validate_dynamic_api(data: Dict[str, Any], authorization: Optional[str] = Header(None)):
     # check_admin(None, authorization)
     try:

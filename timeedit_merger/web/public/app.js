@@ -7,6 +7,7 @@ let out1active = false
 let out2 = ""
 let out2active = false
 const saveButton = document.getElementById('save');
+let editButtonTimers={}
 
 function capitalizeFirstLetter(string) {
     return string.charAt(0).toUpperCase() + string.slice(1);
@@ -48,7 +49,7 @@ function validateJson(data) {
     try {
 
         fetch('api/dynamic/validate', {
-            method: 'PUT',
+            method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
             },
@@ -139,6 +140,7 @@ function resetSourceRows() {
     while (mainTile.children.length > 0) {
         mainTile.removeChild(mainTile.lastChild);
     }
+    editButtonTimers = {}; // Reset the edit button timers
 }
 
 function openPopup() {
@@ -162,14 +164,12 @@ function enableEdit(id) {
     nameInput.removeAttribute('disabled');
     urlInput.removeAttribute('disabled');
 
+    clearTimeout(editButtonTimers[id]);
+
     // change the edit button to a save button
     const editButton = document.getElementById(id + '_edit');
-    editButton.removeEventListener('click', () => {
-        enableEdit(id);
-    });
-    editButton.addEventListener('click', () => {
-        submitEdit(id);
-    });
+
+    editButton.onclick = () => submitEdit(id);
     // get the material icon and change it to save
     const materialIcon = editButton.querySelector('.material-symbols-rounded');
     materialIcon.innerText = 'save_as';
@@ -187,7 +187,60 @@ function setDeleteDialog(id, show) {
 }
 
 function submitEdit(id) {
-    console.log('Work in progress....');
+    const nameInput = document.getElementById(id + '_name');
+    const urlInput = document.getElementById(id + '_url');
+    const name = nameInput.value;
+    const url = urlInput.value;
+
+    // set edit button to be disabled, icon to be a loading spinner
+    const editButton = document.getElementById(id + '_edit');
+    editButton.setAttribute('disabled', 'true');
+    const materialIcon = editButton.querySelector('.material-symbols-rounded');
+    materialIcon.innerText = 'autorenew';
+    materialIcon.classList.add('spin');
+    console.log("Add spin")
+
+
+
+    postJsonViaApi('api/sources/' + id, { name: name, url: url }, (data) => {
+        if (data.status === 'ok') {
+            // disable the input fields again
+            nameInput.setAttribute('disabled', 'true');
+            urlInput.setAttribute('disabled', 'true');
+            // change the save button back to an edit button
+            const editButton = document.getElementById(id + '_edit');
+            editButton.onclick = () => enableEdit(id);
+            // remove the event listener
+            // get the material icon and change it to edit
+            const materialIcon = editButton.querySelector('.material-symbols-rounded');
+            materialIcon.classList.remove('spin');
+            console.log("Kill spin")
+            editButton.removeAttribute('disabled');
+
+            // set to checkbox for 1 second to show that the save was successful
+            materialIcon.innerText = 'check';
+            // after 1 second, change it back to edit
+            // save timer to editButtonTimers[id] so that we can clear it if the user clicks edit again before the timer is up
+            if (editButtonTimers[id]) {
+                clearTimeout(editButtonTimers[id]);
+            }
+            editButtonTimers[id] = setTimeout(() => {
+                materialIcon.innerText = 'edit';
+                editButtonTimers[id] = null;
+            }, 2000);
+        }
+    }, (error) => {
+        // if ics could not be loaded, show an alert and do not disable the input fields
+        console.log('Error updating source:', error);
+        console.log(error.detail)
+
+        if (error && error.detail && error.detail.startsWith("Could not load ICS from")) {
+            alert("Could not load ICS from the provided URL. Please check the URL and try again.");
+        } else {
+            alert('Error updating source: ' + (error.response ? error.response.detail : error.message));
+        }
+    });
+
 }
 
 function deleteSource(id) {
@@ -202,6 +255,7 @@ function deleteSource(id) {
             // remove the source row from the DOM
             const row = document.getElementById(id);
             row.parentNode.removeChild(row);
+            editButtonTimers[id] = null;
         })
         .catch(error => {
             alert('Error deleting source from server: ' + error.message);
@@ -281,10 +335,10 @@ function createSourceRow(id, source) {
     materialIconEdit.classList.add('material-symbols-rounded');
     materialIconEdit.innerText = 'edit';
     editButton.appendChild(materialIconEdit);
-    editButton.addEventListener('click', () => {
-        enableEdit(id);
-    });
+    editButton.onclick = () => enableEdit(id);
     headerDiv.appendChild(editButton);
+
+    editButtonTimers[id] = null; // Initialize the timer for this edit button
 
     // delete button
     const deleteButton = document.createElement('button');

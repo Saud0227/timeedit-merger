@@ -191,6 +191,16 @@ button.edit-button:hover > span{
     color: var(--magenta) !important;
 }
 
+button.edit-button .spin {
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+
 button.delete-button {
     background: transparent;
     padding: 0;
