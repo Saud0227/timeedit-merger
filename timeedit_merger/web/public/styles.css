@@ -7,7 +7,17 @@
     --ultramarin: #200c9c;
     --granitgra: #f0f0f0;
     --kolgra: #222222;
-    --andesitgra: #6F6D6D
+    --andesitgra: #6F6D6D;
+    --ha-background: #1e1e1e;
+    --choices-primary-color: #4b0082;
+    --choices-item-color: #f0f0f0;
+    --choices-bg-color: #1e1e1e;
+    --choices-bg-color-dropdown: #1e1e1e;
+    --choices-keyline-color: #3b3e40;
+    --choices-bg-color-disabled: #181a1b;
+    --choices-item-disabled-color: #eee;
+    --choices-disabled-color: #2d2d2d;
+    --choices-highlighted-color: rgb(90 59 120);
 }
 
 * {
@@ -18,8 +28,8 @@
 body {
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
     margin: 0;
-    padding: 20px;
-    background-color: var(--kolgra);
+    padding: 10px;
+    background-color: var(--ha-background);
 }
 
 h1 {
@@ -38,12 +48,10 @@ main {
     grid-template-rows: min-content 1fr min-content;
     grid-template-columns: 1fr;
     grid-template-areas: "hd" "." "as";
-}
-
-main > * {
-    border-radius: 8px;
     border: solid 2px var(--andesitgra);
-    /*box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);*/
+    background-color: var(--kolgra);
+    border-radius: 16px;
+    padding: 10px;
 }
 
 
@@ -52,75 +60,194 @@ div#main-content {
     flex-direction: column;
 }
 
-a.feed-item {
-    display: flex;
-    margin: 0;
-    padding: 2px;
-    border: solid 2px var(--andesitgra);
-    border-radius: 8px;
-    text-decoration: none;
-    height: fit-content;
-    width: fit-content;
-    justify-self: center;
-    align-self: center;
-    user-select: none;
-}
-a.feed-item > label {
-    margin: 0;
-    padding: 0 5px;
-    user-select: none;
-}
-
-a.feed-item[feed-enabled = "true"] {
-    border-color: #00ff00;
-}
-
-a.feed-item[feed-enabled = "true"] > label {
-    color: #00ff00;
-}
-
-a.feed-item[feed-enabled = "false"] {
-    border-color: #ff0000;
-}
-
-a.feed-item[feed-enabled = "false"] > label {
-    color: #ff0000;
-}
-
-a.feed-item > label {
-    text-decoration: none;
-}
-
-a.feed-item > input {
-    background: transparent;
-    border: none;
-    color: var(--granitgra);
+div#main-content:empty::before {
+    content: "No sources available - create a new source to get started";
+    display: block;
+    text-align: center;
+    color: var(--andesitgra);
+    font-style: italic;
+    margin-bottom: 20px;
 }
 
 /*-----------------------------------------*/
 
-div.source-row#header-row {
-    background-color: var(--andesitgra);
-}
-
-div.source-row#header-row > h2 {
-    margin: 0;
-    padding: 10px 0;
-    color: var(--granitgra);
-    user-select: none;
-}
-
 div.source-row {
+    position: relative;
     display: grid;
-    grid-template-columns: 20% 23% 25% 25% 7%;
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: min-content min-content min-content;
+    column-gap: 20px;
+    row-gap: 10px;
     min-height: 30px;
-    padding: 0 20px;
+    margin: 0 16px;
+    padding: 10px 4px;
+    border-top: solid 2px var(--andesitgra);
+    grid-template-areas:
+        "hd hd"
+        "label1 label2"
+        "select1 select2";
 }
 
-div.source-row > input {
-    background: transparent;
-    border: none;
+div.source-header {
+    grid-area: hd;
+    position: relative;
+    display: grid;
+    grid-template-columns: auto 40px 40px;
+    grid-template-rows: min-content min-content;
+    grid-template-areas: ". . ." "url url url";
+}
+
+div.source-row-cover {
+/*    this sits on top of the source row */
+    position: absolute;
+    /*height width is parent container */
+    inset: 0;
+    background-color: rgba(0, 0, 0, 0.9);
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+}
+
+div.source-row-cover[hidden] {
+    display: none;
+}
+
+div.source-row-cover > span.warning-symbol {
+    font-size: 48px;
+    color: darkorange;
+    margin-bottom: 5px;
+}
+
+div.source-row-cover > h2 {
     color: var(--granitgra);
+    margin: 0;
+    margin-bottom: 5px;
+}
+
+div.source-row-cover > p {
+    color: var(--granitgra);
+    margin: 0;
+    text-align: center;
+    max-width: 300px;
+}
+
+div.button-container {
+    display: flex;
+    gap: 10px;
+    margin: 10px 0 5px 0;
+}
+
+button.cancel-delete-button {
+    background: transparent;
+    font-size: 16px;
+    cursor: pointer;
+    user-select: none;
+
+    border: solid 1px var(--andesitgra);
+    border-radius: 8px;
+    transition: 0.3s ease-in-out;
+    padding: 5px 10px;
+}
+button.cancel-delete-button:hover {
+    border-color: var(--magenta);
+    color: var(--magenta);
+}
+
+
+button.confirm-delete-button {
+    background: transparent;
+    font-size: 16px;
+    cursor: pointer;
+    user-select: none;
+
+    border: solid 1px var(--andesitgra);
+    border-radius: 8px;
+    transition: 0.3s ease-in-out;
+    padding: 5px 10px;
+}
+
+button.confirm-delete-button:hover {
+    border-color: red;
+    color: red;
+}
+
+
+button.edit-button {
+    background: transparent;
+    padding: 0;
+    font-size: 16px;
+    cursor: pointer;
+    user-select: none;
+    border:none
+}
+
+button.edit-button > span {
+    color: var(--granitgra);
+    transition: 0.3s;
+}
+button.edit-button:hover > span{
+    color: var(--magenta) !important;
+}
+
+.spin {
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+
+button.delete-button {
+    background: transparent;
+    padding: 0;
+    font-size: 16px;
+    cursor: pointer;
+    user-select: none;
+    border:none
+}
+
+button.delete-button > span {
+    color: var(--granitgra);
+    transition: 0.3s;
+}
+button.delete-button:hover > span{
+    color: var(--magenta) !important;
+}
+
+div.source-header > .name-and-save-state {
+    display: flex;
+/*    vertical alignment to the top of flex*/
+    align-items: flex-start;
+}
+
+div.source-header input:first-child {
+/*    header text*/
+    font-size: 20px;
+    font-weight: bold;
+    margin: 0 0 10px 0;
+    field-sizing: content;
+}
+/*if not disabled*/
+div.source-header input:first-child:not([disabled]) {
+    min-width: 100px;
+}
+
+div.source-header input:nth-child(2) {
+    grid-area: url;
+}
+
+div.source-header input {
+    background: transparent;
+    border: var(--andesitgra) solid 1px;
+    color: var(--granitgra);
+}
+
+div.source-header input[disabled] {
+    border:none;
 }
 
 div.checkbox-container {
@@ -134,41 +261,32 @@ div.checkbox-container > label {
     user-select: none;
 }
 
-div.checkbox-container > label > input {
-    margin: 0 0 0 5px;
+button.save-state-button {
+    background: transparent;
+    padding: 0;
+    font-size: 16px;
+    cursor: pointer;
+    user-select: none;
+    border:none
 }
 
-div.checkbox-container > label > input:checked {
-    accent-color: green;
+/*if inner text is check but not .spin */
 
+button.save-state-button > span.done:not(.spin) {
+    color: var(--turkosmint);
 }
 
-div.source-row > input[type="checkbox"] {
-    background: var(--kolgra);
-    margin: 0;
-    accent-color: transparent;
-    -webkit-appearance: none;
-    border: solid 1px var(--andesitgra);
-    height: 28px;
-    width: 28px;
-    align-self: center;
-    justify-self: center;
+button.save-state-button > span {
+    color: var(--andesitgra);
+    transition: 0.3s;
 }
 
-div.source-row > input[type="checkbox"]:checked {
-    accent-color: #FF0000;
-    color: #FF0000;
-    background-color: #FF0000;
-    border-color: #FF0000;
+
+button.save-state-button:hover > span{
+    color: var(--magenta) !important;
 }
 
-div.source-row > input[type="checkbox"]:checked:before {
-    content: "x";
-    display: block;
-    color: var(--granitgra);
-    font-size: 28px;
-    text-align: center;
-    line-height: 28px;}
+
 
 
 /*-----------------------------------------*/
@@ -209,4 +327,103 @@ aside > button[heavy]:hover {
 aside > button[heavy][success] {
     background-color: #00ff00;
     color: var(--kolgra);
+}
+
+
+/*-----------------------------------------*/
+
+
+#popup-container {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+#popup-container[hidden] {
+    display: none;
+}
+
+.popup {
+    background-color: var(--kolgra);
+    padding: 0 20px 20px 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+    max-width: 400px;
+    width: 100%;
+    border: solid 2px var(--andesitgra);
+    position: relative;
+}
+
+#new-source-form {
+    display: flex;
+    flex-direction: column;
+}
+
+#new-source-form > label {
+    margin-bottom: 5px;
+}
+
+#new-source-form > input {
+    margin-bottom: 10px;
+    background: var(--andesitgra);
+    border: none;
+    color: var(--granitgra);
+}
+
+#new-source-submit {
+    color: var(--granitgra);
+    background-color: var(--kolgra);
+    /*border: solid 2px var(--andesitgra);*/
+    padding: 10px 20px;
+    font-size: 16px;
+    cursor: pointer;
+    border-radius: 8px;
+    transition: 0.3s ease-in-out;
+    user-select: none;
+    border: 2px solid var(--andesitgra);
+}
+/*if not disabled */
+#new-source-submit:not([disabled]) {
+    background-color: var(--andesitgra);
+    color: var(--kolgra);
+}
+
+
+#new-source-submit:not([disabled]):hover {
+    color: var(--granitgra);
+    background-color: var(--magenta);
+    border-color: var(--magenta);
+}
+
+#new-source-cancel {
+    /*set position to top right of parent*/
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background: transparent;
+    /*border: solid 2px var(--andesitgra);*/
+    padding: 0;
+    font-size: 16px;
+    cursor: pointer;
+    border-radius: 8px;
+    transition: 0.3s ease-in-out;
+    user-select: none;
+    border: none;
+}
+#new-source-cancel > span {
+    color: var(--granitgra);
+    transition: 0.3s;
+}
+#new-source-cancel:hover > span{
+    color: var(--magenta) !important;
+}
+
+.hidden {
+    display: none;
 }
