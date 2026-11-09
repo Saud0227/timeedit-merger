@@ -27,7 +27,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
         if (out1active) {
             const output1a = document.getElementById('output1a');
-            output1a.href = state.output1_url;
+            output1a.href = state.external_url + state.output1_url;
             output1a.innerText = out1;
         } else {
             const output1a = document.getElementById('output1a');
@@ -36,7 +36,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
         if (out2active) {
             const output2a = document.getElementById('output2a');
-            output2a.href = state.output2_url;
+            output2a.href = state.external_url + state.output2_url;
             output2a.innerText = out2;
         } else {
             const output2a = document.getElementById('output2a');
